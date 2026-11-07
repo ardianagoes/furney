@@ -27,11 +27,12 @@ describe('central planner state', () => {
   const initial = createInitialState(demoProducts);
   const add = (instanceId: string, productId = 'demo-sofa') => plannerReducer(initial, { type: 'product/add', productId, instanceId });
 
-  it('creates independent centered instances for repeated products', () => {
+  it('creates independent instances and finds free space for repeated products', () => {
     const first = add('one');
     const second = plannerReducer(first, { type: 'product/add', productId: 'demo-sofa', instanceId: 'two' });
     expect(second.placedItems).toHaveLength(2);
     expect(second.placedItems[0]).toEqual({ instanceId: 'one', productId: 'demo-sofa', xM: initial.room.widthM / 2, zM: initial.room.depthM / 2, rotationDeg: 0 });
+    expect(second.placedItems[1].xM !== second.placedItems[0].xM || second.placedItems[1].zM !== second.placedItems[0].zM).toBe(true);
     expect(getPriceEstimate(second.products, second.placedItems)).toEqual({ total: 1198, unpricedCount: 0 });
     expect(initial.placedItems).toHaveLength(0);
   });

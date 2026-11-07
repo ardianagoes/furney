@@ -1,5 +1,6 @@
 import type { FurnitureProduct, PlacedItem, RoomDimensions } from '../types';
 import { clampToRoom, type FurnitureType, type Room, type SceneItem } from './room';
+import { productVisuals } from './productVisuals';
 
 /** Furney's corner-origin centers -> Angelo's center-origin scene. No axis flip
  * or unit conversion: positive x/z and positive Y-axis rotation are preserved. */
@@ -17,11 +18,12 @@ export const toSceneRoom = (room: RoomDimensions): Room => ({ width: room.widthM
 export function categoryModel(category: string, title = ''): FurnitureType {
   switch (category.toLowerCase()) {
     case 'sofa': case 'sofas': return 'sofa';
-    case 'chair': case 'chairs': case 'armchairs': return 'armchair';
+    case 'chair': case 'chairs': return /dining|office/i.test(title) ? 'chair' : 'armchair';
+    case 'armchairs': return 'armchair';
     case 'seating': return /sofa|loveseat|sectional/i.test(title) ? 'sofa' : 'armchair';
     case 'bed': case 'beds': return 'bed';
     case 'desk': case 'desks': return 'desk';
-    case 'table': case 'tables': return 'coffeeTable';
+    case 'table': case 'tables': return /dining|side/i.test(title) ? 'table' : 'coffeeTable';
     case 'lighting': case 'lamps': return 'lamp';
     case 'rug': case 'rugs': return 'rug';
     case 'storage': case 'shelves': return 'shelf';
@@ -33,13 +35,15 @@ export function categoryModel(category: string, title = ''): FurnitureType {
 const colors: Record<FurnitureType, string> = {
   sofa: '#899978', armchair: '#bb8768', bed: '#c5b69a', coffeeTable: '#a8875d',
   desk: '#b99d78', lamp: '#625f4c', rug: '#c6b598', shelf: '#9f815e', cabinet: '#a8875d', box: '#a5af98',
+  chair: '#a8875d', stool: '#a8875d', table: '#a8875d',
 };
 
 export function toSceneItem(item: PlacedItem, product: FurnitureProduct, room: RoomDimensions): SceneItem {
   const type = categoryModel(product.category, product.title);
   return {
     id: item.instanceId, label: product.title, type, ...toScenePosition(item, room),
-    rot: item.rotationDeg, w: product.widthM, d: product.depthM, h: product.heightM, color: colors[type],
+    rot: item.rotationDeg, w: product.widthM, d: product.depthM, h: product.heightM,
+    ...productVisuals(product, type, colors[type]),
   };
 }
 

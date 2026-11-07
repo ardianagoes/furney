@@ -43,6 +43,11 @@ describe('3D planner wired to Furney shared state', () => {
     const add = screen.getByRole('button', { name: `Add ${sofa.title} to your room` });
     await user.click(add);
     await user.click(add);
+    await waitFor(() => expect(within(planner).getByText('All pieces fit')).toBeTruthy());
+    // Auto-placement starts without overlap; manually move the second piece
+    // onto the first to check that dragging/precise edits still warn.
+    fireEvent.change(within(planner).getByRole('spinbutton', { name: 'Selected piece X in meters' }), { target: { value: '1.8288' } });
+    fireEvent.change(within(planner).getByRole('spinbutton', { name: 'Selected piece Z in meters' }), { target: { value: '2.1336' } });
     await waitFor(() => expect(within(planner).getByText('2 pieces need attention')).toBeTruthy());
     expect(within(planner).getAllByText(/Overlaps Linden/).length).toBeGreaterThan(0);
     const x = within(planner).getByRole('spinbutton', { name: 'Selected piece X in meters' });

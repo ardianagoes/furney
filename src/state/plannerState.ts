@@ -1,5 +1,6 @@
 import type { FurnitureProduct, PlacedItem, RoomDimensions } from '../types';
 import { feetInchesToMeters, MAX_ROOM_METERS } from '../lib/units';
+import { findAvailablePlacement } from '../lib/autoPlacement';
 
 export interface PlannerState {
   room: RoomDimensions;
@@ -30,12 +31,15 @@ export function plannerReducer(state: PlannerState, action: PlannerAction): Plan
         ...item, xM: Math.min(item.xM, action.room.widthM), zM: Math.min(item.zM, action.room.depthM),
       })) };
     }
-    case 'product/add':
-      if (!state.products.some(product => product.id === action.productId) || state.placedItems.some(item => item.instanceId === action.instanceId)) return state;
-      return { ...state, placedItems: [...state.placedItems, {
+    case 'product/add': {
+      const product = state.products.find(product => product.id === action.productId);
+      if (!product || state.placedItems.some(item => item.instanceId === action.instanceId)) return state;
+      const item: PlacedItem = {
         instanceId: action.instanceId, productId: action.productId,
         xM: state.room.widthM / 2, zM: state.room.depthM / 2, rotationDeg: 0,
-      }] };
+      };
+      return { ...state, placedItems: [...state.placedItems, findAvailablePlacement(item, product, state.room, state.placedItems, state.products)] };
+    }
     case 'item/update': {
       const { item } = action;
       if (!Number.isFinite(item.xM) || !Number.isFinite(item.zM) || item.xM < 0 || item.xM > state.room.widthM || item.zM < 0 || item.zM > state.room.depthM || ![0, 90, 180, 270].includes(item.rotationDeg)) return state;

@@ -6,13 +6,17 @@ export function furnitureGeometryBounds(group: Group): Box3 {
   group.updateWorldMatrix(true, true);
   const inverse = group.matrixWorld.clone().invert();
   const bounds = new Box3();
+  const vertex = new Vector3();
   group.traverse((object) => {
     if (!(object instanceof Mesh)) return;
-    object.geometry.computeBoundingBox();
-    const box = object.geometry.boundingBox;
-    if (!box) return;
+    const positions = object.geometry.getAttribute("position");
+    if (!positions) return;
     const local = new Matrix4().multiplyMatrices(inverse, object.matrixWorld);
-    bounds.union(box.clone().applyMatrix4(local));
+    // Transform actual vertices: rotating a cylinder's axis-aligned bounding
+    // box overestimates its extents and shrinks tapered/splayed furniture.
+    for (let index = 0; index < positions.count; index++) {
+      bounds.expandByPoint(vertex.fromBufferAttribute(positions, index).applyMatrix4(local));
+    }
   });
   return bounds;
 }
