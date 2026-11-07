@@ -145,6 +145,22 @@ h2 { font-family: var(--font-serif); font-size: clamp(30px, 3vw, 41px); font-wei
 .category-filters button:hover { background: #e4eada; }
 .category-filters button.active { background: #40583d; color: #fbfdf5; }
 .catalog-count { font-size: 9px; color: #979e89; margin-block: 19px 12px; }
+.catalog-price-notice { font-size: 10px; line-height: 1.7; margin-top: 10px; color: #717b63; }
+.catalog-sort { display: flex; align-items: center; gap: 10px; margin-top: 13px; font-size: 10px; color: #717b63; }
+.catalog-sort select { flex: 1; min-width: 0; border: 1px solid #dce1d1; border-radius: 5px; padding: 8px; background: #fffef9; color: #354532; font: inherit; }
+.product-source { display: inline-block; font-size: 8px; line-height: 1.6; margin-top: 6px; padding: 2px 5px; border-radius: 3px; background: #eeeadc; color: #806d4a; }
+.product-source-retailer { background: #e8eddf; color: #5b7150; }
+.catalog-add-button { display: flex; align-items: center; justify-content: center; gap: 5px; width: 100%; border: 1px solid #d5ddcb; border-radius: 4px; padding: 8px 5px; background: #edf1e5; color: #40583d; font-size: 10px; margin-top: 12px; }
+.catalog-add-button:hover { background: #304b3c; border-color: #304b3c; color: #fffef9; }
+.retailer-link { display: inline-flex; align-items: center; gap: 3px; color: #526d43; font-size: 10px; margin-top: 8px; line-height: 1.6; }
+.retailer-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.product-image-fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 100%; color: #7c896e; }
+.product-image-fallback span { font-size: 9px; }
+.selected-thumbnail .product-image-fallback span { display: none; }
+.catalog-panel .product-card h4 { min-height: 2.8em; line-height: 1.4; }
+.catalog-panel .demo-notice { flex-wrap: wrap; }
+.catalog-panel .product-grid { max-height: 480px; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: thin; scrollbar-color: #b1bba4 transparent; padding-right: 5px; }
+.product-price > span { display: block; margin-top: 4px; }
 .product-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; row-gap: 21px; }
 .product-card { min-width: 0; }
 .product-image { position: relative; height: 120px; border-radius: 5px; background: #edeede; overflow: hidden; }
@@ -207,5 +223,10 @@ h2 { font-family: var(--font-serif); font-size: clamp(30px, 3vw, 41px); font-wei
   .product-category, .product-dimensions, .product-price > span { font-size: 10px; }
   .add-product, .remove-item { min-width: 40px; min-height: 40px; }
   .clear-button { min-height: 40px; }
+  .catalog-sort select { min-height: 42px; font-size: 16px; }
+  .catalog-add-button { min-height: 42px; font-size: 12px; }
+  .retailer-link { min-height: 32px; font-size: 11px; }
+  .product-source { font-size: 9px; }
+  .catalog-panel .product-grid { max-height: 640px; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; animation: none !important; } }

@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { demoProducts } from '../data/demoProducts';
+import type { FurnitureProduct } from '../types';
 import { feetInchesToMeters, metersToFeetInches } from '../lib/units';
 import { createInitialState, getPriceEstimate, plannerReducer } from './plannerState';
+
+// Test-only fixtures keep the reducer's unpriced/unknown-product coverage
+// independent of the imported catalog.
+const demoProducts: FurnitureProduct[] = [
+  { id: 'demo-sofa', title: 'Test sofa', category: 'Seating', widthM: 2, depthM: 0.9, heightM: 0.8, priceUSD: 599, imageUrl: null, retailerUrl: null },
+  { id: 'demo-chair', title: 'Test chair', category: 'Seating', widthM: 0.75, depthM: 0.8, heightM: 0.8, priceUSD: 249, imageUrl: null, retailerUrl: null },
+  { id: 'demo-shelf', title: 'Unpriced fixture', category: 'Storage', widthM: 0.8, depthM: 0.35, heightM: 1.5, priceUSD: null, imageUrl: null, retailerUrl: null },
+];
 
 describe('imperial to metric boundary', () => {
   it('converts feet and inches without rounding stored dimensions', () => {

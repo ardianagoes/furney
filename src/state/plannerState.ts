@@ -51,6 +51,6 @@ export function plannerReducer(state: PlannerState, action: PlannerAction): Plan
 export function getPriceEstimate(products: readonly FurnitureProduct[], items: readonly PlacedItem[]) {
   return items.reduce((estimate, item) => {
     const price = products.find(product => product.id === item.productId)?.priceUSD;
-    return { total: estimate.total + (price ?? 0), unpricedCount: estimate.unpricedCount + (price == null ? 1 : 0) };
+    return { total: Math.round((estimate.total + (price ?? 0)) * 100) / 100, unpricedCount: estimate.unpricedCount + (price == null ? 1 : 0) };
   }, { total: 0, unpricedCount: 0 });
 }
