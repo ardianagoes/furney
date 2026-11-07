@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:vision": "node scripts/verify-photo-search.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

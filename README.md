@@ -2,7 +2,7 @@
 
 **Your room. Your dimensions. Your budget.**
 
-The React + TypeScript frontend for Furney, built for a Brown University hackathon. Includes a responsive landing page, room dimensions, Angelo's interactive React Three Fiber room planner, Shreya's sample and IKEA-linked furniture catalog, selected furniture list, and estimated pricing. No backend, accounts, API keys, or AI calls. The 3D view requires WebGL2; the catalog, pricing, and numeric placement controls remain available if 3D cannot start.
+The React + TypeScript frontend for Furney, built for a Brown University hackathon. Includes a responsive landing page, room dimensions, Angelo's interactive React Three Fiber room planner, Shreya's catalog and photo/manual matching, selected furniture list, and estimated pricing. The optional OpenAI image-analysis endpoint requires a server-side key; all manual search and room planning work without one. The 3D view requires WebGL2; catalog, pricing, and numeric placement controls remain available if 3D cannot start.
 
 ## Run locally
 
@@ -14,6 +14,8 @@ npm run dev
 ```
 
 Open the local URL printed by Vite (normally http://localhost:5173). No environment variables are needed.
+
+To enable actual photo analysis, set server-side `OPENAI_API_KEY` in ignored `.env.local` (locally) or Vercel environment variables (deployment), then restart/redeploy. See [photo-search setup and real verification](docs/PHOTO_SEARCH.md). Without it, uploaded photos receive a clear unavailable message and manual category/style matching works. No successful live AI analysis is claimed from mocked tests.
 
 ```sh
 npm run test     # coordinates, fit, real mesh geometry, shared-state UI, and costs
@@ -37,6 +39,8 @@ src/
   App.tsx           Application composition
   styles.css        Tailwind v4 + responsive component styles and design tokens
 ```
+
+`api/photo-search.ts` is the Vercel serverless entry point; `server/` contains image validation, rate limiting, and the OpenAI adapter. Vite runs the same handler as local dev middleware. `src/components/PhotoSearch.tsx`, `src/lib/photo-match.ts`, and `src/data/furnitureAttributes.ts` adapt Shreya's browser UI, ranking rules, and product descriptors. No new runtime dependencies are required.
 
 ## Integration: Angelo's 3D planner
 
@@ -80,12 +84,12 @@ For asynchronous discovery later, add an explicit loading/error UI and a reducer
 - Room dimensions accept whole feet/inches, 0–11 inches, and totals from 1 to 100 feet per axis. Invalid input leaves the existing room unchanged.
 - Search, category filters, price sorting, repeated additions, individual removal, clear-all, and price estimates work locally.
 - Responsive layouts include a stacked mobile workspace, visible keyboard focus, labeled controls, screen-reader announcements, and reduced-motion support.
-- Interactive 3D selection, dragging, quarter-turn rotation, removal, fit warnings, and a manual photo overlay work locally. AI discovery remains a future integration; no simulated AI or live retailer inventory is presented.
+- Interactive 3D selection, dragging, quarter-turn rotation, removal, fit warnings, and a manual room-photo overlay work locally. Furniture photo search is separate from the room-photo overlay: matching uses the existing catalog, with manual fallback and optional server-side OpenAI analysis. Retailer prices remain imported estimates.
 
 Vite setup follows the [Vite guide](https://vite.dev/guide/), with the [Tailwind Vite plugin](https://tailwindcss.com/docs/installation/using-vite).
 
 ## Verification
 
-Run `npm test` and `npm run build`. The 56 tests cover the catalog, unit conversion, coordinate round trips, all quarter-turn orientations, snapping/clamping, wall/height/overlap rules, exact mesh extents using real R3F geometry without a GPU, shared-state selection/move/rotate/remove callbacks, warnings after room resizing, local photo cleanup, and pricing. App DOM tests replace only the WebGL canvas to exercise the real host adapter and reducer. The original catalog tests remain in place.
+Run `npm test` and `npm run build`. The 79 tests cover the catalog, unit conversion, coordinate round trips, all quarter-turn orientations, snapping/clamping, wall/height/overlap rules, exact mesh extents using real R3F geometry without a GPU, shared-state selection/move/rotate/remove callbacks, warnings after room resizing, local photo cleanup, pricing, photo-match ranking, request/image validation, server rate limits, provider errors, manual fallback, and matched-product placement. App DOM tests replace only the WebGL canvas to exercise the real host adapter and reducer. Provider transport is mocked in automated tests; it does not verify actual AI classification. Use the opt-in `npm run test:vision` against a configured server for real chair/sofa analysis.
 
 Live Chrome QA additionally verified catalog-to-WebGL additions, pointer dragging, rotation, removal, overlap and wall warnings, precise positioning, and layouts at desktop and a 390px mobile viewport (no horizontal page overflow). WebGL support varies by device; use the fallback controls if it is unavailable. The production build emits a separate, relatively large Three.js/Drei scene bundle; Vite's size advisory is expected. No renderer or camera code was added to the landing page.
