@@ -1,4 +1,4 @@
-// Adapted from Shreya @ 6bde669d0ee75ac4a0c5541b675b76b121687818.
+// Adapted from Shreya's latest matching improvements @ ecd9f15fedd90da6946b91a8a8e47d326123826a.
 import type { FurnitureProduct } from "../types";
 import type { ProductAttributes } from "../data/furnitureAttributes";
 import type { PhotoAnalysis } from "./photo-search-types";

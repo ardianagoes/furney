@@ -1,4 +1,4 @@
-// Adapted from Shreya @ 6bde669d0ee75ac4a0c5541b675b76b121687818.
+// Updated from Shreya's furniture attributes @ ecd9f15fedd90da6946b91a8a8e47d326123826a.
 /**
  * Visual descriptors for catalog products, used by photo search matching.
  * Kept separate so the FurnitureProduct interface stays unchanged.

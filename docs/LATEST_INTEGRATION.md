@@ -1,14 +1,14 @@
 # Latest teammate integration
 
-Baseline: Furney main `f9b8bb43708351d907b69cbeb2d2b280ad0e864f` after PRs #1–#3.
+Baseline: Furney main `c6c0ab4f2b9b10999281f0093f61cdc91136a3da`, including Shreya's matching changes merged in PR #5. PR #4 merges this baseline without rewriting history.
 
 ## Shreya
 
-Adapted [main at 6bde669](https://github.com/shreya-sneha-dhakal/pixel-perfect-replica/tree/6bde669d0ee75ac4a0c5541b675b76b121687818):
+Preserved PR #5's matching implementation and attributes exactly, including its [source provenance at ecd9f15](https://github.com/shreya-sneha-dhakal/pixel-perfect-replica/tree/ecd9f15fedd90da6946b91a8a8e47d326123826a):
 
-- Corrected the seven existing product descriptors: Linden, Marlo, Nordby, Rise, Nook, Arlo and Taper.
-- Ported color families, +30 compatible-color bonus and conservative −20 recognized-mismatch penalty. Unknown/missing colors are not penalized; category, material, style and keyword rules remain.
-- Ported all 23 matching regressions, using Furney's actual corrected Linden attributes rather than the source test's older local override. Added an explicit UPPLAND-above-Marlo cream-sofa assertion.
+- Retained the seven corrected product descriptors: Linden, Marlo, Nordby, Rise, Nook, Arlo and Taper.
+- Retained color families, +30 compatible-color bonus and conservative −20 recognized-mismatch penalty. Unknown/missing colors are not penalized; category, material, style and keyword rules remain.
+- Retained all 23 matching regressions in main's existing photo-match.test.ts. Removed PR #4's duplicate regression file and carried its explicit UPPLAND-above-Marlo cream-sofa assertion into that suite.
 
 The existing 21 catalog records, 15 images, IDs, meter dimensions, prices and retailer URLs are unchanged. Results still return canonical product objects to the existing Add to Room callback.
 
@@ -34,6 +34,8 @@ The existing OpenAI Responses handler, validation, rate limits, frontend request
 `vercel.json` disables automatic Git deployments for **only** `codex/integrate-latest-teammate-improvements`, following [Vercel's branch-specific deployment setting](https://vercel.com/docs/project-configuration/git-configuration#git.deploymentenabled). Main and other branches retain their existing behavior. This PR is for review, with no automatic merge or deployment.
 
 ## Verification
+
+After merging main at `c6c0ab4` (PR #5), all 133 tests and the production build passed again. The matching implementation and product attributes are byte-for-byte identical to that main revision; Angelo's rendering and automatic-placement implementation remain unchanged from PR #4's initial `a9b2a7f` commit. Duplicate matching regressions were consolidated into main's existing test suite.
 
 - `npm ci`: passed, zero audit vulnerabilities.
 - `npm test`: 133 passing tests. Includes all 23 Shreya regressions, geometry for all 21 products at 0°/90°, automatic placement, and real image bytes through the actual handler with mocked OpenAI transport into matches → Add → shared scene props → drag/rotate → price.
