@@ -15,6 +15,7 @@ describe('imperial to metric boundary', () => {
   it('converts feet and inches without rounding stored dimensions', () => {
     expect(feetInchesToMeters(12, 6)).toBeCloseTo(3.81, 10);
     expect(feetInchesToMeters(0, 1)).toBe(0.0254);
+    expect(feetInchesToMeters(1, 0)).toBe(0.3048);
   });
   it('carries rounded inches into feet', () => {
     expect(metersToFeetInches(0.3048 - 0.001)).toEqual({ feet: 1, inches: 0 });

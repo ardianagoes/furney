@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
 import { FurnitureCatalog } from './FurnitureCatalog';
 import { furnitureProducts } from '../data/furnitureProducts';
+
+vi.mock('./room/RoomScene', () => import('../test/MockRoomScene'));
 
 afterEach(cleanup);
 
@@ -45,7 +47,7 @@ describe('catalog UI in Furney', () => {
     const user = userEvent.setup();
     render(<App />);
     const selection = screen.getByRole('region', { name: /Your room, piece by piece/ });
-    const canvas = screen.getByRole('region', { name: 'Future interactive 3D room planner' });
+    const canvas = screen.getByRole('region', { name: 'Interactive 3D room planner' });
     const sample = furnitureProducts[0];
     const desk = furnitureProducts[17];
     await user.click(screen.getByRole('button', { name: `Add ${sample.title} to your room` }));
