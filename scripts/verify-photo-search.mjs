@@ -29,6 +29,6 @@ for (const [file, expected] of [['chair-2.jpg', 'Chairs'], ['sofa-1.jpg', 'Sofas
   }
 }
 if (failures) {
-  console.error('Real chair/sofa classification is NOT verified. Configure server-side OPENAI_API_KEY and rerun this check.');
+  console.error('Real chair/sofa classification is NOT verified. Resolve the errors above (server-side OPENAI_API_KEY and/or deployment access), then rerun this check.');
   process.exitCode = 1;
 } else console.log('Verified distinct chair and sofa classifications through real image-analysis requests.');
