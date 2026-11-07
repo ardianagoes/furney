@@ -1,21 +1,28 @@
-import { useState } from 'react';
-import { ArrowUpRight, Plus, Search, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { ArrowUpRight, Camera, Plus, Search, X } from 'lucide-react';
 import type { FurnitureCatalogProps } from '../types';
 import { formatFeetInches, formatPrice } from '../lib/units';
 import { getRetailerLink, getVisibleProducts, type CatalogSort } from '../lib/catalog';
 import { ProductImage } from './ProductImage';
+import { PhotoSearch } from './PhotoSearch';
 
 export function FurnitureCatalog({ products, placedItems, onAddProduct }: FurnitureCatalogProps) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
   const [sort, setSort] = useState<CatalogSort>('none');
+  const [photoSearchOpen, setPhotoSearchOpen] = useState(false);
+  const photoTrigger = useRef<HTMLButtonElement>(null);
+  const closePhotoSearch = () => { setPhotoSearchOpen(false); photoTrigger.current?.focus(); };
   const categories = ['All', ...new Set(products.map(product => product.category))];
   const visible = getVisibleProducts(products, query, category, sort);
   return <aside className="catalog-panel" aria-labelledby="catalog-heading">
     <div className="catalog-heading"><div><span className="eyebrow">THE COLLECTION</span><h3 id="catalog-heading">Find your next favorite.</h3></div><ArrowUpRight size={19} /></div>
     <p className="demo-notice"><span className="demo-badge">CURATED CATALOG</span> 15 sample pieces + IKEA-linked products.</p>
     <p className="catalog-price-notice">Prices are imported estimates, not live or independently verified. Check retailer pages for current details.</p>
-    <label className="search-input"><Search size={17} /><span className="sr-only">Search furniture</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Find a piece for your space…" /></label>
+    <div className="catalog-search-area" onKeyDown={event => { if (event.key === 'Escape' && photoSearchOpen) { event.stopPropagation(); closePhotoSearch(); } }}>
+      <div className="catalog-search-row"><label className="search-input"><Search size={17} /><span className="sr-only">Search furniture</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Find a piece…" /></label><button ref={photoTrigger} type="button" className="photo-search-trigger" aria-expanded={photoSearchOpen} aria-controls="catalog-photo-search" onClick={() => setPhotoSearchOpen(value => !value)}><Camera size={15} /> Search by Photo</button></div>
+      {photoSearchOpen && <div id="catalog-photo-search"><PhotoSearch products={products} onAddProduct={onAddProduct} onClose={closePhotoSearch} /></div>}
+    </div>
     <div className="category-filters" role="group" aria-label="Filter furniture by category">{categories.map(value => <button key={value} type="button" aria-pressed={category === value} className={category === value ? 'active' : ''} onClick={() => setCategory(value)}>{value}</button>)}</div>
     <label className="catalog-sort"><span>Sort by</span><select aria-label="Sort by price" value={sort} onChange={event => setSort(event.target.value as CatalogSort)}>
       <option value="none">Featured</option>
