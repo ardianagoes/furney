@@ -8,8 +8,10 @@ import { Box3, Group, Vector3 } from 'three';
 import { FurnitureMesh } from './Furniture';
 import type { FurnitureType, SceneItem } from '../../lib/room';
 import { furnitureGeometryBounds } from '../../lib/furniture-bounds';
+import { furnitureProducts } from '../../data/furnitureProducts';
+import { toSceneItem } from '../../lib/plannerAdapter';
 
-extend({ Group: THREE.Group, Mesh: THREE.Mesh, BoxGeometry: THREE.BoxGeometry, CylinderGeometry: THREE.CylinderGeometry, MeshStandardMaterial: THREE.MeshStandardMaterial });
+extend({ Group: THREE.Group, Mesh: THREE.Mesh, BoxGeometry: THREE.BoxGeometry, CylinderGeometry: THREE.CylinderGeometry, ExtrudeGeometry: THREE.ExtrudeGeometry, MeshStandardMaterial: THREE.MeshStandardMaterial });
 
 async function renderFurniture(item: SceneItem) {
   const canvas = document.createElement('canvas');
@@ -28,6 +30,33 @@ async function renderFurniture(item: SceneItem) {
 }
 
 describe('dimensioned procedural geometry', () => {
+  it.each(furnitureProducts)('preserves actual $title dimensions with its product-specific geometry', async product => {
+    const item = toSceneItem({ instanceId: 'piece', productId: product.id, xM: 2, zM: 2, rotationDeg: 0 }, product, { widthM: 4, depthM: 4, heightM: 3 });
+    const { group, cleanup } = await renderFurniture(item);
+    try {
+      const bounds = new Box3().setFromObject(group, true);
+      const size = bounds.getSize(new Vector3());
+      expect(size.x).toBeCloseTo(product.widthM, 5);
+      expect(size.z).toBeCloseTo(product.depthM, 5);
+      expect(size.y).toBeCloseTo(product.heightM, 5);
+      expect(bounds.min.y).toBeCloseTo(0, 5);
+      // Test real named mesh features, not merely adapter metadata.
+      const features: Record<string, string> = {
+        'sofa-2': 'sloped-arm', 'sofa-3': 'seat2', 'chair-1': 'leg-1-0',
+        'chair-2': 'back-slat-0', 'chair-3': 'office-wheel-0',
+        'desk-2': 'standing-column--1', 'desk-3': 'cubby-back',
+        'table-1': 'pedestal-column', 'table-3': 'tripod-leg-0',
+        'bed-2': 'headboard-pad-0', 'bed-3': 'daybed-side-rail--1',
+        'ikea-uppland-19384116': 'arm-roll1',
+      };
+      if (features[product.id]) expect(group.getObjectByName(features[product.id])).toBeTruthy();
+      group.rotation.y = Math.PI / 2;
+      const rotated = new Box3().setFromObject(group, true).getSize(new Vector3());
+      expect(rotated.x).toBeCloseTo(product.depthM, 5);
+      expect(rotated.z).toBeCloseTo(product.widthM, 5);
+    } finally { cleanup(); }
+  });
+
   it.each(['sofa', 'armchair', 'bed', 'desk', 'coffeeTable', 'lamp', 'rug', 'shelf', 'box'] as FurnitureType[])('normalizes the complete %s mesh to catalog width/depth/height and floor origin', async type => {
     const item: SceneItem = { id: 'piece', label: 'Test piece', type, x: 0, z: 0, rot: 0, w: 1.23, d: 0.76, h: type === 'rug' ? 0.02 : 0.93, color: '#889977' };
     const { group, cleanup } = await renderFurniture(item);

@@ -4,10 +4,10 @@ import type { Group } from "three";
 import { fitFurnitureGeometry } from "../../lib/furniture-bounds";
 
 /** Normalize actual mesh extents, not an invisible proxy bounding box. */
-export function DimensionedFurniture({ w, d, h, children }: { w: number; d: number; h: number; children: ReactNode }) {
+export function DimensionedFurniture({ w, d, h, geometryKey, children }: { w: number; d: number; h: number; geometryKey: string; children: ReactNode }) {
   const group = useRef<Group>(null);
   useLayoutEffect(() => {
     if (group.current) fitFurnitureGeometry(group.current, { w, d, h });
-  });
+  }, [w, d, h, geometryKey]);
   return <group ref={group}>{children}</group>;
 }

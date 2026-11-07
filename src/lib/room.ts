@@ -2,7 +2,28 @@
 // SceneItem is a derived render record, never a second placement store.
 // Pure room-planning rules: no React, no three.js. Units are meters.
 
-export type FurnitureType = "box" | "sofa" | "armchair" | "coffeeTable" | "bed" | "desk" | "lamp" | "rug" | "shelf" | "cabinet";
+export type FurnitureType = "box" | "sofa" | "armchair" | "chair" | "stool" | "table" | "coffeeTable" | "bed" | "desk" | "lamp" | "rug" | "shelf" | "cabinet";
+
+/** Visual fractions adapted from Angelo @ 2e91b68; never product measurements. */
+export interface StructuralAppearance {
+  supports?: "fourLegs" | "pedestal" | "panels" | "trestle" | "sled";
+  topShape?: "rectangular" | "round" | "oval";
+  legStyle?: "straight" | "tapered" | "splayed";
+  seatShape?: "rectangular" | "round" | "oval";
+  backStyle?: "none" | "solid" | "slatted";
+  seatLevel?: number;
+  footrest?: boolean;
+  headboard?: "none" | "solid" | "slatted" | "upholstered";
+  mattressHeight?: number;
+  drawers?: number;
+  thickness?: number;
+  legThickness?: number;
+  material?: "wood" | "metal" | "glass" | "painted";
+  // Small catalog-specific extensions to Angelo's normalized shape primitives.
+  variant?: "standing" | "wall" | "office" | "daybed";
+  legCount?: 3 | 4;
+  lowerShelf?: boolean;
+}
 
 /** Visual proportions only; confirmed overall dimensions remain the fit source of truth. */
 export interface SeatingAppearance {
@@ -16,6 +37,18 @@ export interface SeatingAppearance {
   backDepth: number;
   softness: number;
   chaise: "none" | "left" | "right";
+  armWidth?: number;
+  backCushions?: number;
+  backSlope?: number;
+  seatCushion?: "bench" | "split";
+  legShape?: "block" | "tapered" | "splayed" | "sled";
+  regularDepth?: number;
+  silhouette?: "boxy" | "rounded" | "plush";
+  armProfile?: "rectangular" | "rounded" | "rolled" | "sloped";
+  cushionHeight?: number;
+  backHeight?: number;
+  legThickness?: number;
+  upholstery?: "woven" | "velvet" | "leather";
 }
 
 export interface SceneItem {
@@ -30,6 +63,7 @@ export interface SceneItem {
   h: number;
   color: string;
   appearance?: SeatingAppearance;
+  structure?: StructuralAppearance;
 }
 
 export interface Room {

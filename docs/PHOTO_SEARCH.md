@@ -48,6 +48,10 @@ The implementation targets the [OpenAI Responses image-input API](https://develo
 - No images are saved to disk, databases, localStorage, or application logs. Photos/data URLs exist transiently in browser/server memory for preview and analysis. Closing/clearing cancels the browser's outstanding request and releases the preview. OpenAI requests use `store: false`; any provider-level retention is governed by the OpenAI account's data policies.
 - The frontend imports only types, ranking, attributes, and the relative fetch client. The server adapter and environment variables are not part of `dist`.
 
-## Verification status
+## Current integration
+
+The latest matching/appearance/placement update is documented in [LATEST_INTEGRATION.md](LATEST_INTEGRATION.md). Production's GPT-5.4 Mini selection remains supplied through the server-only `OPENAI_MODEL` override; this update changes no API code, credentials or environment configuration. Real HTTP requests to the existing production endpoint successfully classified the stored chair and sofa images as Chairs and Sofas. The integration branch was not deployed. Automated provider tests remain mocked.
+
+## Original PR #3 verification
 
 No usable local `OPENAI_API_KEY` was present during integration. A real local HTTP check with the stored chair/sofa images returns **503 / not_configured**. The Vercel preview build succeeded, but both deployed smoke-test requests returned **401 / Protected by Vercel Authentication**, so the preview's AI configuration could not be verified by that client. Therefore live chair/sofa AI classification remains **unverified**, even when mocked transport tests pass. All 79 automated tests and the production build pass. Live Chrome checks additionally verified manual chair/sofa results, Add to Room rendering, exact dimensions/prices, shared totals, collision warnings, rotation/position controls, retailer URLs, and a 390px mobile layout without horizontal page overflow. The browser automation's file-attachment helper required an extension permission that was not changed; actual image request handling was checked through the real HTTP smoke test instead.

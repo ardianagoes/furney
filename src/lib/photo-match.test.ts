@@ -58,6 +58,8 @@ describe("photo match ranking", () => {
     expect(matches[0]?.product.id).toBe("sofa-1");
     expect(matches.find((match) => match.product.id === "sofa-1")?.score).toBe(170);
     expect(matches.find((match) => match.product.id === "sofa-2")?.score).toBe(120);
+    const ids = matches.map(match => match.product.id);
+    expect(ids.indexOf("ikea-uppland-19384116")).toBeLessThan(ids.indexOf("sofa-2"));
   });
   it("ranks white MICKE above natural-wood Nook", () => {
     const matches = matchProducts({ category: "Desks", primaryColor: "white", style: "minimalist", keywords: ["writing", "desk"] }, furnitureProducts, furnitureAttributes);

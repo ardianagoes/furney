@@ -1,7 +1,9 @@
-// Adapted from Angelo's roomfit-furnish-finder @ f541bc9f521201cccc1e0b15aaa58abc3bb5c284.
+// Base primitives from Angelo @ f541bc9; shape/seating dispatch adapted from
+// 2e91b68dd8b1dc453d51cd27b7f84b4347298762, excluding import/assembly systems.
 import type { SceneItem } from "../../lib/room";
 import { SeatingMesh } from "./SeatingMesh";
 import { DimensionedFurniture } from "./DimensionedFurniture";
+import { ShapeFurniture } from "./ShapeFurniture";
 
 function B({ p, s, c, r = 0.6 }: { p: [number, number, number]; s: [number, number, number]; c: string; r?: number }) {
   return (
@@ -16,7 +18,10 @@ const LEG = "#3a2c22";
 
 /** Procedural furniture built in its own local space, origin at floor center. */
 export function FurnitureMesh({ item }: { item: SceneItem }) {
-  return <DimensionedFurniture w={item.w} d={item.d} h={item.h}><FurnitureParts item={item} /></DimensionedFurniture>;
+  const shaped = ["chair", "stool", "table", "coffeeTable", "desk", "bed"].includes(item.type);
+  return <DimensionedFurniture w={item.w} d={item.d} h={item.h} geometryKey={JSON.stringify([item.type, item.appearance, item.structure])}>
+    {shaped ? <ShapeFurniture item={item} /> : <FurnitureParts item={item} />}
+  </DimensionedFurniture>;
 }
 
 function FurnitureParts({ item }: { item: SceneItem }) {
