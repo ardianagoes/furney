@@ -2,7 +2,7 @@ export const METERS_PER_FOOT = 0.3048;
 export const MAX_ROOM_METERS = 30.48;
 
 export function feetInchesToMeters(feet: number, inches: number): number {
-  return (feet * 12 + inches) * 0.0254;
+  return feet * METERS_PER_FOOT + inches * 0.0254;
 }
 
 export function metersToFeetInches(meters: number) {

@@ -198,6 +198,43 @@ h2 { font-family: var(--font-serif); font-size: clamp(30px, 3vw, 41px); font-wei
 .skip-link { position: fixed; top: -70px; left: 12px; padding: 12px 20px; background: #304b3c; color: white; border-radius: 5px; z-index: 50; }
 .skip-link:focus { top: 12px; }
 
+/* Angelo's interactive scene fits the existing Furney workspace panel. */
+.interactive-planner { min-width: 0; overflow: hidden; background: #edf1e5; border: 1px solid #dce2d1; border-top: 0; border-radius: 0 0 8px 8px; }
+.scene-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 17px 18px 10px; }
+.scene-heading > span { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #738264; }
+.scene-heading > span:first-child { font-size: 9px; font-weight: 600; letter-spacing: 1.3px; color: #40583d; }
+.scene-tools { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 18px 13px; }
+.scene-tools button, .scene-selection button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; border: 1px solid #ced8c2; border-radius: 4px; background: #f7f9ef; color: #536949; padding: 8px 9px; font-size: 11px; min-height: 34px; }
+.scene-tools button:hover, .scene-selection button:hover { background: #dce5d0; }
+.scene-viewport { height: 390px; position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 70%, #f0f3e9, #e4ead9); }
+.scene-renderer, .room-photo { position: absolute; inset: 0; width: 100%; height: 100%; }
+.room-photo { object-fit: cover; }
+.scene-renderer canvas { touch-action: none; }
+.scene-fit-badge { position: absolute; top: 14px; left: 16px; pointer-events: none; display: flex; align-items: center; gap: 6px; background: #f8fbeeec; border: 1px solid #cedbbf; border-radius: 5px; padding: 8px 10px; color: #5d754d; font-size: 11px; }
+.scene-fit-badge.has-issues { background: #fff3e9ed; border-color: #e1c5ae; color: #9f5339; }
+.scene-instructions, .scene-notice { font-size: 11px; line-height: 1.7; color: #78856b; padding: 12px 18px; }
+.scene-notice { padding-top: 0; }
+.scene-error { color: #9f5339; }
+.scene-selection { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; background: #f8faf3; border-block: 1px solid #dce3d2; padding: 14px 18px; }
+.scene-select-label { flex: 1 1 180px; min-width: 0; font-size: 10px; color: #6a7b5d; }
+.scene-select-label select { display: block; width: 100%; min-width: 0; margin-top: 5px; padding: 8px 5px; border: 1px solid #d1dac5; border-radius: 4px; color: #3b5234; background: #fffef9; font-size: 11px; }
+.scene-position-inputs { display: flex; gap: 7px; }
+.scene-position-inputs label { font-size: 10px; color: #6a7b5d; }
+.scene-position-inputs input { display: block; margin-top: 5px; width: 76px; padding: 8px 5px; border: 1px solid #d1dac5; border-radius: 4px; color: #3b5234; background: #fffef9; font-size: 11px; }
+.scene-selection .scene-remove { color: #a06045; }
+.scene-selected-size, .scene-selected-warning { flex-basis: 100%; color: #7a886b; font-size: 10px; line-height: 1.8; }
+.scene-selected-warning { color: #a35a3d; }
+.scene-warnings, .camera-controls { padding: 13px 18px; border-bottom: 1px solid #dbe2d0; font-size: 11px; color: #687c56; }
+.scene-warnings summary, .camera-controls summary { cursor: pointer; width: fit-content; }
+.scene-warnings { color: #9c5e40; }
+.scene-warnings ul { margin: 10px 0 0; padding-left: 16px; max-height: 130px; overflow-y: auto; line-height: 1.8; }
+.camera-sliders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; margin-top: 17px; }
+.camera-sliders label > span { display: flex; justify-content: space-between; gap: 8px; }
+.camera-sliders output { font-variant-numeric: tabular-nums; }
+.camera-sliders input { width: 100%; margin-top: 9px; accent-color: #647f50; }
+.scene-unavailable, .scene-loading { min-height: 100%; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; padding: 25px; font-size: 13px; text-align: center; color: #637952; }
+.scene-unavailable .button { font-size: 12px; padding: 9px 12px; }
+
 /* Keep compact workspace controls readable without sacrificing the canvas. */
 .dimensions-heading h3, .product-card h4, .selected-item-name strong { font-size: 12px; }
 .dimensions-heading span, .dimension-inputs legend, .dimension-pair label > span:not(.sr-only), .product-dimensions, .catalog-count, .catalog-footnote, .estimate-row div > span, .selected-item-name span { font-size: 10px; color: #717b63; }
@@ -228,5 +265,14 @@ h2 { font-family: var(--font-serif); font-size: clamp(30px, 3vw, 41px); font-wei
   .retailer-link { min-height: 32px; font-size: 11px; }
   .product-source { font-size: 9px; }
   .catalog-panel .product-grid { max-height: 640px; }
+  .scene-viewport { height: 360px; }
+  .scene-heading { flex-wrap: wrap; }
+  .scene-tools button, .scene-selection button { min-height: 42px; }
+  .scene-select-label { flex-basis: 100%; }
+  .scene-select-label select, .scene-position-inputs input { min-height: 42px; font-size: 16px; }
+  .scene-position-inputs input { width: 85px; }
+  .scene-selection { padding: 14px; gap: 8px; }
+  .camera-sliders { grid-template-columns: 1fr; }
+  .camera-sliders input { min-height: 28px; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; animation: none !important; } }
