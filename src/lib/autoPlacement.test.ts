@@ -22,7 +22,7 @@ describe('automatic shared-state furniture placement', () => {
     const before = structuredClone(furnitureProducts);
     for (let index = 0; index < 4; index++) {
       const previous = state.placedItems;
-      state = plannerReducer(state, { type: 'product/add', productId: 'sofa-1', instanceId: String(index) });
+      state = plannerReducer(state, { type: 'product/add', productId: 'ikea-kivik-80519531', instanceId: String(index) });
       expect(state.placedItems.slice(0, -1)).toEqual(previous);
       const all = state.placedItems.map(i => scene(i, furnitureProducts));
       expect(all.every(value => itemProblems(value, all, toSceneRoom(room)).length === 0)).toBe(true);

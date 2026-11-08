@@ -32,7 +32,7 @@ export function Landing() {
       </section>
       <section id="how-it-works" aria-label="How Furney works" className="steps-strip page-width">
         <div className="step"><span className="step-icon"><Ruler size={20} /></span><div><strong>01 / Measure your space</strong><p>A few dimensions. A world of possibilities.</p></div></div>
-        <div className="step"><span className="step-icon"><Box size={20} /></span><div><strong>02 / Find your pieces</strong><p>Explore the demo collection. Make it yours.</p></div></div>
+        <div className="step"><span className="step-icon"><Box size={20} /></span><div><strong>02 / Find your pieces</strong><p>Explore IKEA furniture. Make it yours.</p></div></div>
         <div className="step"><span className="step-icon"><Wallet size={20} /></span><div><strong>03 / Keep it in budget</strong><p>See your estimate come together as you go.</p></div></div>
         <a href="#planner" className="steps-arrow" aria-label="Go to room planner"><ArrowDown size={20} /></a>
       </section>

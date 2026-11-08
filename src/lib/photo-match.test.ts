@@ -9,12 +9,12 @@ describe('Shreya photo matching over the integrated catalog', () => {
     expect(furnitureProducts.every(product => !('colors' in product))).toBe(true);
   });
   it('ranks chair descriptors and returns actual existing chair objects only', () => {
-    const result = matchProducts({ category: 'Chairs', primaryColor: 'black', material: 'mesh', style: 'modern', keywords: ['office', 'wheels'] }, furnitureProducts, furnitureAttributes);
-    expect(result[0].product.id).toBe('chair-3');
-    expect(result[0].product).toBe(furnitureProducts.find(p => p.id === 'chair-3'));
+    const result = matchProducts({ category: 'Chairs', primaryColor: 'grey', material: 'fabric', style: 'traditional', keywords: ['wingback'] }, furnitureProducts, furnitureAttributes);
+    expect(result[0].product.id).toBe('ikea-strandmon-90359829');
+    expect(result[0].product).toBe(furnitureProducts.find(p => p.id === 'ikea-strandmon-90359829'));
     expect(result.every(match => match.product.category === 'Chairs')).toBe(true);
-    expect(result[0].score).toBe(175);
-    expect(result[0].reasons).toContain('Similar material (mesh)');
+    expect(result[0].score).toBe(170);
+    expect(result[0].reasons).toContain('Similar material (fabric)');
   });
   it('returns a different category for sofa descriptors and retains prices/dimensions', () => {
     const result = matchProducts({ category: 'Sofas', primaryColor: 'black', material: 'leather', style: 'modern' }, furnitureProducts, furnitureAttributes);
@@ -30,14 +30,14 @@ describe('Shreya photo matching over the integrated catalog', () => {
   });
   it('is stable for ties, limits results, and does not mutate source data', () => {
     const before = furnitureProducts.map(p => p.id);
-    expect(matchProducts({ category: 'Sofas' }, furnitureProducts, {}, 2).map(match => match.product.id)).toEqual(['sofa-1', 'sofa-2']);
+    expect(matchProducts({ category: 'Sofas' }, furnitureProducts, {}, 2).map(match => match.product.id)).toEqual(['ikea-kivik-80519531', 'ikea-uppland-19384116']);
     expect(furnitureProducts.map(p => p.id)).toEqual(before);
   });
 });
 
 // Regression cases adapted from Shreya's latest photo-match tests (23 cases).
-const sampleSofa = furnitureProducts.find((product) => product.id === "sofa-1");
-if (!sampleSofa) throw new Error("Expected the existing Linden sofa fixture");
+const sampleSofa = furnitureProducts.find((product) => product.id === "ikea-kivik-80519531");
+if (!sampleSofa) throw new Error("Expected the existing IKEA sofa fixture");
 const colorScore = (searchColor: string | undefined, productColors: string[]) => matchProducts(
   { category: "Sofas", ...(searchColor === undefined ? {} : { primaryColor: searchColor }) },
   [sampleSofa],
@@ -53,19 +53,17 @@ describe("photo match ranking", () => {
   it("returns nothing for a category not in the catalog", () => {
     expect(matchProducts({ category: "Other" }, furnitureProducts, furnitureAttributes)).toHaveLength(0);
   });
-  it("ranks a beige Linden above rust-orange Marlo for a cream fabric sofa", () => {
-    const matches = matchProducts({ category: "Sofas", primaryColor: "cream", material: "fabric", style: "modern", keywords: ["upholstered", "sofa"] }, furnitureProducts, furnitureAttributes);
-    expect(matches[0]?.product.id).toBe("sofa-1");
-    expect(matches.find((match) => match.product.id === "sofa-1")?.score).toBe(170);
-    expect(matches.find((match) => match.product.id === "sofa-2")?.score).toBe(120);
-    const ids = matches.map(match => match.product.id);
-    expect(ids.indexOf("ikea-uppland-19384116")).toBeLessThan(ids.indexOf("sofa-2"));
-  });
-  it("ranks white MICKE above natural-wood Nook", () => {
+  it("ranks white UPPLAND above grey MORABO and black KIVIK for a cream fabric sofa", () => {
+ const matches = matchProducts({category:"Sofas", primaryColor:"cream", material:"fabric", style:"modern"}, furnitureProducts, furnitureAttributes);
+ expect(matches[0].product.id).toBe("ikea-uppland-19384116");
+ expect(matches[0].score).toBe(165);
+ expect(matches.find(m=>m.product.id==="ikea-kivik-80519531")?.score).toBe(115);
+ });
+  it("ranks white MICKE among matching white desks", () => {
     const matches = matchProducts({ category: "Desks", primaryColor: "white", style: "minimalist", keywords: ["writing", "desk"] }, furnitureProducts, furnitureAttributes);
     expect(matches[0]?.product.id).toBe("ikea-micke-80213074");
     expect(matches.find((match) => match.product.id === "ikea-micke-80213074")?.score).toBe(155);
-    expect(matches.find((match) => match.product.id === "desk-3")?.score).toBe(105);
+    expect(matches.find((match) => match.product.id === "ikea-lagkapten-89521695")?.score).toBe(155);
   });
   it("does not penalize missing search color", () => {
     expect(colorScore(undefined, ["rust"])).toBe(100);
@@ -92,7 +90,8 @@ describe("photo match ranking", () => {
     expect(colorScore("gray", ["grey"])).toBe(130);
   });
   it("preserves material, style and per-keyword bonuses", () => {
-    const matches = matchProducts({ category: "Sofas", material: "fabric", style: "modern", keywords: ["three-seat", "armrests"] }, [sampleSofa], furnitureAttributes);
+    const sofa = furnitureProducts.find(p=>p.id==="ikea-uppland-19384116")!;
+    const matches = matchProducts({ category: "Sofas", material: "fabric", style: "modern", keywords: ["three-seat", "cushions"] }, [sofa], furnitureAttributes);
     expect(matches[0]?.score).toBe(145);
   });
   it("keeps the default six-result limit and deterministic catalog-order ties", () => {

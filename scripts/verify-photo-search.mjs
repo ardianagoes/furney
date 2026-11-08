@@ -5,9 +5,9 @@ import { readFile } from 'node:fs/promises';
 const baseUrl = process.env.PHOTO_SEARCH_BASE_URL || 'http://127.0.0.1:5173';
 const endpoint = new URL('/api/photo-search', baseUrl);
 let failures = 0;
-for (const [file, expected] of [['chair-2.jpg', 'Chairs'], ['sofa-1.jpg', 'Sofas']]) {
+for (const [file, expected] of [['00457235.jpg', 'Chairs'], ['80519531.jpg', 'Sofas']]) {
   try {
-    const image = await readFile(new URL(`../src/assets/furniture/${file}`, import.meta.url));
+    const image = await readFile(new URL(`../src/assets/ikea/${file}`, import.meta.url));
     const response = await fetch(endpoint, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dataUrl: `data:image/jpeg;base64,${image.toString('base64')}` }),

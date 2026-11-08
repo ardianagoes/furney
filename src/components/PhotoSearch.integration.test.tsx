@@ -17,7 +17,7 @@ it('uploads real image bytes through validation and mocked OpenAI, then matches,
   const user = userEvent.setup();
   const provider = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({
     status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify({
-      isFurniture: true, category: 'Sofas', primaryColor: 'cream', material: 'fabric', style: 'modern', keywords: ['three-seat', 'cushions'],
+      isFurniture: true, category: 'Sofas', primaryColor: 'black', material: 'leather', style: 'modern', keywords: ['three-seat', 'cushions'],
     }) }] }],
   })));
   const handler = createPhotoHandler({ env: { OPENAI_API_KEY: 'test-only-key', OPENAI_MODEL: 'gpt-5.4-mini' }, fetchImpl: provider });
@@ -34,14 +34,14 @@ it('uploads real image bytes through validation and mocked OpenAI, then matches,
   }));
   render(<App />);
   await user.click(screen.getByRole('button', { name: 'Search by Photo' }));
-  const file = new File([new Uint8Array(readFileSync(new NodeURL('../assets/furniture/sofa-1.jpg', import.meta.url)))], 'sofa.jpg', { type: 'image/jpeg' });
+  const file = new File([new Uint8Array(readFileSync(new NodeURL('../assets/ikea/80519531.jpg', import.meta.url)))], 'sofa.jpg', { type: 'image/jpeg' });
   fireEvent.change(screen.getByLabelText('Upload furniture photo'), { target: { files: [file] } });
   await screen.findByText('AI description — please review');
   expect(provider).toHaveBeenCalledOnce();
   expect(JSON.parse(String(provider.mock.calls[0][1]?.body)).model).toBe('gpt-5.4-mini');
   const results = screen.getByRole('list', { name: 'Photo search matches' });
-  expect(within(results).getAllByRole('listitem')[0].textContent).toContain('Linden');
-  const product = furnitureProducts.find(p => p.id === 'sofa-1')!;
+  expect(within(results).getAllByRole('listitem')[0].textContent).toContain('KIVIK');
+  const product = furnitureProducts.find(p => p.id === 'ikea-kivik-80519531')!;
   // Add twice to exercise the same auto-placement path from photo matches.
   const add = within(results).getByRole('button', { name: `Add photo match ${product.title} to your room` });
   await user.click(add);
@@ -49,7 +49,7 @@ it('uploads real image bytes through validation and mocked OpenAI, then matches,
   const planner = screen.getByRole('region', { name: 'Interactive 3D room planner' });
   await screen.findAllByRole('button', { name: `Select scene piece ${product.title}` });
   expect(within(planner).getByText('All pieces fit')).toBeTruthy();
-  expect(within(planner).getByText('2.10 × 0.92 × 0.84 m · W × D × H')).toBeTruthy();
+  expect(within(planner).getByText('2.27 × 0.95 × 0.83 m · W × D × H')).toBeTruthy();
   await user.click(screen.getAllByRole('button', { name: `Drag scene piece ${product.title}` })[1]);
   await user.click(within(planner).getByRole('button', { name: 'Rotate selected furniture 90 degrees' }));
   const selected = (within(planner).getByRole('combobox', { name: 'Selected furniture' }) as HTMLSelectElement).value;

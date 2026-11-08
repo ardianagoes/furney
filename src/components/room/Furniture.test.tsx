@@ -42,12 +42,10 @@ describe('dimensioned procedural geometry', () => {
       expect(bounds.min.y).toBeCloseTo(0, 5);
       // Test real named mesh features, not merely adapter metadata.
       const features: Record<string, string> = {
-        'sofa-2': 'sloped-arm', 'sofa-3': 'seat2', 'chair-1': 'leg-1-0',
-        'chair-2': 'back-slat-0', 'chair-3': 'office-wheel-0',
-        'desk-2': 'standing-column--1', 'desk-3': 'cubby-back',
-        'table-1': 'pedestal-column', 'table-3': 'tripod-leg-0',
-        'bed-2': 'headboard-pad-0', 'bed-3': 'daybed-side-rail--1',
-        'ikea-uppland-19384116': 'arm-roll1',
+        "ikea-morabo-39575884": "seat2", "ikea-strandmon-90359829": "arm-roll1",
+        "ikea-lisabo-00457235": "chair-back", "ikea-lisabo-40416498": "shape-top",
+        "ikea-neiden-59248607": "headboard-slat-0", "ikea-malm-19931605": "shape-headboard",
+        "ikea-uppland-19384116": "arm-roll1",
       };
       if (features[product.id]) expect(group.getObjectByName(features[product.id])).toBeTruthy();
       group.rotation.y = Math.PI / 2;

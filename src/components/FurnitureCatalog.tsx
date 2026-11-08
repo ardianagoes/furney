@@ -17,8 +17,8 @@ export function FurnitureCatalog({ products, placedItems, onAddProduct }: Furnit
   const visible = getVisibleProducts(products, query, category, sort);
   return <aside className="catalog-panel" aria-labelledby="catalog-heading">
     <div className="catalog-heading"><div><span className="eyebrow">THE COLLECTION</span><h3 id="catalog-heading">Find your next favorite.</h3></div><ArrowUpRight size={19} /></div>
-    <p className="demo-notice"><span className="demo-badge">CURATED CATALOG</span> 15 sample pieces + IKEA-linked products.</p>
-    <p className="catalog-price-notice">Prices are imported estimates, not live or independently verified. Check retailer pages for current details.</p>
+    <p className="demo-notice"><span className="demo-badge">IKEA FURNITURE</span> Real pieces, sized for your space.</p>
+    <p className="catalog-price-notice">IKEA US price snapshots checked November 8, 2026. Prices and availability can change; check IKEA before purchasing. Bed frames may need separately sold slats or mattresses.</p>
     <div className="catalog-search-area" onKeyDown={event => { if (event.key === 'Escape' && photoSearchOpen) { event.stopPropagation(); closePhotoSearch(); } }}>
       <div className="catalog-search-row"><label className="search-input"><Search size={17} /><span className="sr-only">Search furniture</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Find a piece…" /></label><button ref={photoTrigger} type="button" className="photo-search-trigger" aria-expanded={photoSearchOpen} aria-controls="catalog-photo-search" onClick={() => setPhotoSearchOpen(value => !value)}><Camera size={15} /> Search by Photo</button></div>
       {photoSearchOpen && <div id="catalog-photo-search"><PhotoSearch products={products} onAddProduct={onAddProduct} onClose={closePhotoSearch} /></div>}
@@ -40,15 +40,15 @@ export function FurnitureCatalog({ products, placedItems, onAddProduct }: Furnit
             {count > 0 && <span className="product-count">{count} in your room</span>}
           </div>
           <span className="product-category">{product.category}</span><h4>{product.title}</h4>
-          <span className={`product-source ${retailer ? 'product-source-retailer' : ''}`}>{retailer ? `${retailer.name} link` : 'Sample product'}</span>
+          <span className="product-source product-source-retailer">{retailer?.name ?? 'Product'} link</span>
           <p className="product-dimensions" aria-label="Width, depth, and height">{formatFeetInches(product.widthM)} × {formatFeetInches(product.depthM)} × {formatFeetInches(product.heightM)}</p>
-          <p className="product-price">{product.priceUSD === null ? 'Price unavailable' : formatPrice(product.priceUSD)}<span> / {retailer ? 'imported price' : 'sample price'}</span></p>
+          <p className="product-price">{product.priceUSD === null ? 'Price unavailable' : formatPrice(product.priceUSD)}<span> / price snapshot</span></p>
           <button type="button" className="catalog-add-button" onClick={() => onAddProduct(product.id)} aria-label={`Add ${product.title} to your room`}><Plus size={13} /> Add to Room</button>
           {retailer && <a className="retailer-link" href={retailer.href} target="_blank" rel="noopener noreferrer" aria-label={`View ${product.title} at ${retailer.name} (opens in a new tab)`}>View at {retailer.name} <ArrowUpRight size={12} /></a>}
         </article>;
       })}
     </div>
     {visible.length === 0 && <div className="catalog-empty"><Search size={25} /><h4>No pieces found</h4><p>Try another search or category.</p><button className="text-button" onClick={() => { setQuery(''); setCategory('All'); setSort('none'); }}><X size={14} /> Clear filters</button></div>}
-    <p className="catalog-footnote">Sample images are illustrative. Retailer-linked details<br />come from Shreya’s catalog snapshot.</p>
+    <p className="catalog-footnote">Product details and images from IKEA US.<br />3D shapes are approximate; confirm details with IKEA.</p>
   </aside>;
 }

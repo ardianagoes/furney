@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { itemProblems, footprint, type SceneItem, type Room } from '../../lib/room';
 import { FurnitureMesh } from './Furniture';
+import type { OccupiedArea } from '../../lib/room-photo-types';
+import { occupiedBy } from '../../lib/occupiedAreas';
 
 export interface CameraRig {
   height: number;
@@ -15,6 +17,8 @@ export interface CameraRig {
 }
 
 export interface RoomSceneProps {
+  alignment: {x:number;y:number};
+  occupied: readonly OccupiedArea[];
   room: Room;
   items: SceneItem[];
   selectedId: string | null;
@@ -25,8 +29,8 @@ export interface RoomSceneProps {
   onMove: (id: string, x: number, z: number) => void;
 }
 
-function Rig({ rig }: { rig: CameraRig }) {
-  const { camera } = useThree();
+function Rig({ rig,alignment }: { rig: CameraRig;alignment:{x:number;y:number} }) {
+  const { camera,size } = useThree();
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera;
     const yaw = THREE.MathUtils.degToRad(rig.yaw);
@@ -35,8 +39,9 @@ function Rig({ rig }: { rig: CameraRig }) {
     cam.position.set(Math.sin(yaw) * rig.distance, rig.height, Math.cos(yaw) * rig.distance);
     cam.rotation.order = 'YXZ';
     cam.rotation.set(-pitch, yaw, 0);
+    cam.setViewOffset(size.width,size.height,-alignment.x*size.width,-alignment.y*size.height,size.width,size.height);
     cam.updateProjectionMatrix();
-  }, [camera, rig]);
+  }, [camera, rig,alignment,size.width,size.height]);
   return null;
 }
 
@@ -86,8 +91,8 @@ export function SceneFurniture({ item, problems, selected, onSelect, onMove }: {
   </group>;
 }
 
-export function RoomScene({ room, items, selectedId, showGrid, photoMode, rig, onSelect, onMove }: RoomSceneProps) {
-  const problems = useMemo(() => Object.fromEntries(items.map(item => [item.id, itemProblems(item, items, room)])), [items, room]);
+export function RoomScene({ room, items, selectedId, showGrid, photoMode, rig, alignment,occupied, onSelect, onMove }: RoomSceneProps) {
+  const problems = useMemo(() => Object.fromEntries(items.map(item => [item.id, [...itemProblems(item, items, room),...(occupiedBy(item,occupied)?['Overlaps detected existing furniture']:[])]])), [items, room,occupied]);
   const hw = room.width / 2, hd = room.depth / 2;
   const extent = Math.max(room.width, room.depth, room.height);
   return <Canvas
@@ -98,7 +103,7 @@ export function RoomScene({ room, items, selectedId, showGrid, photoMode, rig, o
     fallback={<div className="scene-unavailable">3D needs WebGL2. Your furniture list and placement controls still work.</div>}
     aria-label="Interactive room canvas"
   >
-    <Rig rig={rig} />
+    <Rig rig={rig} alignment={alignment} />
     <ambientLight intensity={0.7} />
     <directionalLight position={[extent, extent * 2, extent]} intensity={1.6} castShadow shadow-mapSize={[1024, 1024]}
       shadow-camera-left={-extent} shadow-camera-right={extent} shadow-camera-top={extent} shadow-camera-bottom={-extent} shadow-camera-far={extent * 5} />
@@ -116,6 +121,10 @@ export function RoomScene({ room, items, selectedId, showGrid, photoMode, rig, o
       <Line points={[[-hw, 0.005, -hd], [hw, 0.005, -hd], [hw, 0.005, hd], [-hw, 0.005, hd], [-hw, 0.005, -hd]]} color="#71865b" lineWidth={2} />
       <Line points={[[-hw, 0, -hd], [-hw, room.height, -hd], [hw, room.height, -hd], [hw, 0, -hd]]} color="#8d9d7d" lineWidth={1} transparent opacity={0.55} />
     </>}
+    {occupied.map(a=><group key={a.id} position={[a.x,0.008,a.z]}>
+      <mesh rotation-x={-Math.PI/2}><planeGeometry args={[a.w,a.d]}/><meshBasicMaterial color="#bd8a3e" transparent opacity={0.25} depthWrite={false}/></mesh>
+      <Line points={[[-a.w/2,0,-a.d/2],[a.w/2,0,-a.d/2],[a.w/2,0,a.d/2],[-a.w/2,0,a.d/2],[-a.w/2,0,-a.d/2]]} color="#bd8a3e" lineWidth={2}/>
+    </group>)}
     {items.map(item => <SceneFurniture key={item.id} item={item} problems={problems[item.id] ?? []} selected={item.id === selectedId} onSelect={onSelect} onMove={onMove} />)}
   </Canvas>;
 }

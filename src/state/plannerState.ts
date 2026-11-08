@@ -1,14 +1,17 @@
 import type { FurnitureProduct, PlacedItem, RoomDimensions } from '../types';
 import { feetInchesToMeters, MAX_ROOM_METERS } from '../lib/units';
 import { findAvailablePlacement } from '../lib/autoPlacement';
+import type { OccupiedArea } from '../lib/room-photo-types';
 
 export interface PlannerState {
   room: RoomDimensions;
   products: FurnitureProduct[];
   placedItems: PlacedItem[];
+  occupiedAreas: OccupiedArea[];
 }
 
 export type PlannerAction =
+  | { type: 'occupied/update'; areas: OccupiedArea[] }
   | { type: 'room/update'; room: RoomDimensions }
   | { type: 'product/add'; productId: string; instanceId: string }
   | { type: 'item/update'; item: PlacedItem }
@@ -20,14 +23,18 @@ export function createInitialState(products: FurnitureProduct[]): PlannerState {
     room: { widthM: feetInchesToMeters(12, 0), depthM: feetInchesToMeters(14, 0), heightM: feetInchesToMeters(9, 0) },
     products,
     placedItems: [],
+    occupiedAreas: [],
   };
 }
 
 export function plannerReducer(state: PlannerState, action: PlannerAction): PlannerState {
   switch (action.type) {
+    case 'occupied/update':
+      if(action.areas.length>20 || action.areas.some(a=>typeof a.id!=='string'||typeof a.label!=='string'||a.label.length>80||![a.x,a.z,a.w,a.d].every(Number.isFinite)||a.w<=0||a.d<=0||a.w>100||a.d>100||Math.abs(a.x)>100||Math.abs(a.z)>100)) return state;
+      return {...state,occupiedAreas:action.areas};
     case 'room/update': {
       if (!Object.values(action.room).every(value => Number.isFinite(value) && value >= 0.3048 && value <= MAX_ROOM_METERS)) return state;
-      return { ...state, room: action.room, placedItems: state.placedItems.map(item => ({
+      return { ...state, room: action.room, occupiedAreas: [], placedItems: state.placedItems.map(item => ({
         ...item, xM: Math.min(item.xM, action.room.widthM), zM: Math.min(item.zM, action.room.depthM),
       })) };
     }
@@ -38,7 +45,7 @@ export function plannerReducer(state: PlannerState, action: PlannerAction): Plan
         instanceId: action.instanceId, productId: action.productId,
         xM: state.room.widthM / 2, zM: state.room.depthM / 2, rotationDeg: 0,
       };
-      return { ...state, placedItems: [...state.placedItems, findAvailablePlacement(item, product, state.room, state.placedItems, state.products)] };
+      return { ...state, placedItems: [...state.placedItems, findAvailablePlacement(item, product, state.room, state.placedItems, state.products, state.occupiedAreas)] };
     }
     case 'item/update': {
       const { item } = action;

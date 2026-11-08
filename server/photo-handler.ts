@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { MAX_IMAGE_BYTES, ACCEPTED_IMAGE_TYPES, type PhotoAnalysisResult } from '../src/lib/photo-search-types.js';
 import { analyzeFurniturePhoto } from './photo-analysis.server.js';
+import type { RoomAnalysisResult } from '../src/lib/room-photo-types.js';
 
 const MAX_JSON_BYTES = Math.ceil(MAX_IMAGE_BYTES / 3) * 4 + 512;
 const WINDOW_MS = 60_000;
@@ -53,10 +54,10 @@ async function readBody(request: IncomingMessage & { body?: unknown }): Promise<
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
-export function createPhotoHandler(options: { env?: NodeJS.ProcessEnv; fetchImpl?: typeof fetch; allowRequest?: (address: string) => boolean } = {}) {
+export function createPhotoHandler(options: { env?: NodeJS.ProcessEnv; fetchImpl?: typeof fetch; allowRequest?: (address: string) => boolean; analyze?: (dataUrl: string, options: {apiKey:string;model?:string;fetchImpl?:typeof fetch}) => Promise<PhotoAnalysisResult | RoomAnalysisResult> } = {}) {
   const allowRequest = options.allowRequest ?? createRateLimiter();
   return async (request: IncomingMessage & { body?: unknown }, response: ServerResponse) => {
-    const send = (status: number, result: PhotoAnalysisResult) => {
+    const send = (status: number, result: PhotoAnalysisResult | RoomAnalysisResult) => {
       response.statusCode = status;
       response.setHeader('Content-Type', 'application/json; charset=utf-8');
       response.setHeader('Cache-Control', 'no-store');
@@ -84,7 +85,7 @@ export function createPhotoHandler(options: { env?: NodeJS.ProcessEnv; fetchImpl
     if (!validateImage(dataUrl)) return send(400, { ok: false, code: 'unsupported', message: 'Invalid image. Choose a genuine JPG, PNG, or WebP up to 3 MB.' });
     const env = options.env ?? process.env;
     if (!env.OPENAI_API_KEY?.trim()) return send(503, { ok: false, code: 'not_configured', message: 'AI photo analysis is not configured. Manual category/style search still works.' });
-    const result = await analyzeFurniturePhoto(dataUrl, { apiKey: env.OPENAI_API_KEY.trim(), model: env.OPENAI_MODEL, fetchImpl: options.fetchImpl });
+    const result = await (options.analyze ?? analyzeFurniturePhoto)(dataUrl, { apiKey: env.OPENAI_API_KEY.trim(), model: env.OPENAI_MODEL, fetchImpl: options.fetchImpl });
     send(result.ok ? 200 : result.code === 'not_configured' ? 503 : result.code === 'rate_limited' ? 429 : result.code === 'not_furniture' ? 422 : 502, result);
   };
 }

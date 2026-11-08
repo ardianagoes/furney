@@ -9,21 +9,21 @@ const visual = (id: string) => {
 
 describe('catalog-derived illustrative appearances', () => {
   it('distinguishes neutral, rust, grey, white, and leather sofas without altering their dimensions', () => {
-    const ids = ['sofa-1', 'sofa-2', 'sofa-3', 'ikea-uppland-19384116', 'ikea-kivik-80519531'];
-    expect(new Set(ids.map(id => visual(id).color)).size).toBe(5);
-    expect(visual('sofa-2').appearance).toMatchObject({ seats: 2, legShape: 'tapered', armProfile: 'sloped' });
-    expect(visual('sofa-3').appearance).toMatchObject({ chaise: 'right', regularDepth: 0.54 });
+    const ids = ['ikea-kivik-80519531', 'ikea-morabo-89318321', 'ikea-morabo-39575884', 'ikea-uppland-19384116', 'ikea-kivik-80519531'];
+    expect(new Set(ids.map(id => visual(id).color)).size).toBe(3);
+    expect(visual('ikea-morabo-89318321').appearance).toMatchObject({ seats: 2, legShape: 'tapered', armProfile: 'rectangular' });
+    expect(visual('ikea-morabo-39575884').appearance).toMatchObject({ chaise: 'right', regularDepth: 0.58 });
     expect(visual('ikea-uppland-19384116').appearance?.arms).toBe('rolled');
     expect(visual('ikea-kivik-80519531').appearance?.upholstery).toBe('leather');
   });
   it('uses appropriate chair, desk, table and bed silhouettes from descriptors', () => {
-    expect(visual('chair-1')).toMatchObject({ type: 'armchair', color: '#e3d9c4', appearance: { legs: 'wood', legShape: 'splayed' } });
-    expect(visual('chair-2')).toMatchObject({ type: 'chair', structure: { backStyle: 'slatted' } });
-    expect(visual('chair-3').structure?.variant).toBe('office');
-    expect(visual('desk-2').structure?.variant).toBe('standing');
-    expect(visual('desk-3').structure?.variant).toBe('wall');
-    expect(visual('table-1').structure).toMatchObject({ topShape: 'round', supports: 'pedestal' });
-    expect(visual('table-3').structure).toMatchObject({ topShape: 'round', legCount: 3 });
-    expect(visual('bed-2').structure?.headboard).toBe('upholstered');
+    expect(visual('ikea-poaeng-59305928')).toMatchObject({ type: 'armchair', color: '#c6b9a5', appearance: { legs: 'wood', legShape: 'sled' } });
+    expect(visual('ikea-lisabo-00457235')).toMatchObject({ type: 'chair', structure: { backStyle: 'solid' } });
+    expect(visual('ikea-strandmon-90359829').appearance?.arms).toBe('rolled');
+    expect(visual('ikea-trotten-79621921').structure?.variant).toBeUndefined();
+    expect(visual('ikea-lagkapten-89521695').structure?.drawers).toBe(1);
+    expect(visual('ikea-lisabo-40416498').structure).toMatchObject({ topShape: 'round', supports: 'fourLegs' });
+    expect(visual('ikea-lisabo-50416501').structure).toMatchObject({ topShape: 'round', legStyle: 'tapered' });
+    expect(visual('ikea-malm-19931605').structure?.headboard).toBe('solid');
   });
 });
