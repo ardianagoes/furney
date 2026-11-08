@@ -249,8 +249,7 @@ h2 { font-family: var(--font-serif); font-size: clamp(30px, 3vw, 41px); font-wei
 .scene-tools button, .scene-selection button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; border: 1px solid #ced8c2; border-radius: 4px; background: #f7f9ef; color: #536949; padding: 8px 9px; font-size: 11px; min-height: 34px; }
 .scene-tools button:hover, .scene-selection button:hover { background: #dce5d0; }
 .scene-viewport { height: 390px; position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 70%, #f0f3e9, #e4ead9); }
-.scene-renderer, .room-photo { position: absolute; inset: 0; width: 100%; height: 100%; }
-.room-photo { object-fit: cover; }
+.scene-renderer { position: absolute; inset: 0; width: 100%; height: 100%; }
 .room-analysis-panel { padding: 0 18px 16px; font-size: 12px; line-height: 1.6; color: #53664b; border-bottom: 1px solid #dbe2d0; }
 .room-analysis-panel p { margin: 8px 0; }
 .room-analysis-panel [role="alert"] { color: #a64937; }

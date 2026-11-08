@@ -10,6 +10,7 @@ import { occupiedBy } from '../../lib/occupiedAreas';
 import type {CameraStore} from '../../lib/cameraControls';
 import {applyCameraPose} from '../../lib/cameraPose';
 import {bindWheelZoom} from '../../lib/cameraZoom';
+import {RoomFloor} from './RoomFloor';
 
 export interface CameraRig {
   height: number;
@@ -27,7 +28,9 @@ export interface RoomSceneProps {
   items: SceneItem[];
   selectedId: string | null;
   showGrid: boolean;
-  photoMode: boolean;
+  photo: string | null;
+  onPhotoLoad: (width:number,height:number)=>void;
+  onPhotoError: ()=>void;
   rig: CameraRig;
   onSelect: (id: string | null) => void;
   onMove: (id: string, x: number, z: number) => void;
@@ -97,7 +100,7 @@ export function SceneFurniture({ item, problems, selected, onSelect, onMove }: {
   </group>;
 }
 
-export function RoomScene({ room, items, selectedId, showGrid, photoMode, rig, cameraStore,alignment,occupied, onSelect, onMove }: RoomSceneProps) {
+export function RoomScene({ room, items, selectedId, showGrid, photo, onPhotoLoad,onPhotoError, rig, cameraStore,alignment,occupied, onSelect, onMove }: RoomSceneProps) {
   const problems = useMemo(() => Object.fromEntries(items.map(item => [item.id, [...itemProblems(item, items, room),...(occupiedBy(item,occupied)?['Overlaps detected existing furniture']:[])]])), [items, room,occupied]);
   const hw = room.width / 2, hd = room.depth / 2;
   const extent = Math.max(room.width, room.depth, room.height);
@@ -117,13 +120,10 @@ export function RoomScene({ room, items, selectedId, showGrid, photoMode, rig, c
       <Lightformer intensity={2} position={[0, extent + 2, 0]} scale={[10, 10, 1]} rotation-x={Math.PI / 2} />
       <Lightformer intensity={1} color="#ffe2c4" position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[20, 2, 1]} />
     </Environment>
-    <mesh rotation-x={-Math.PI / 2} receiveShadow>
-      <planeGeometry args={[room.width, room.depth]} />
-      {photoMode ? <shadowMaterial opacity={0.35} /> : <meshStandardMaterial color="#dce3cf" roughness={0.95} />}
-    </mesh>
+    <RoomFloor width={room.width} depth={room.depth} photo={photo} onPhotoLoad={onPhotoLoad} onPhotoError={onPhotoError}/>
     {showGrid && <>
       <Grid args={[room.width, room.depth]} cellSize={0.5} cellThickness={0.6} sectionSize={1} sectionThickness={1.2}
-        cellColor={photoMode ? '#ffffff' : '#a9b49b'} sectionColor="#879b70" fadeDistance={extent * 4} position={[0, 0.002, 0]} />
+        cellColor={photo ? '#ffffff' : '#a9b49b'} sectionColor="#879b70" fadeDistance={extent * 4} position={[0, 0.002, 0]} />
       <Line points={[[-hw, 0.005, -hd], [hw, 0.005, -hd], [hw, 0.005, hd], [-hw, 0.005, hd], [-hw, 0.005, -hd]]} color="#71865b" lineWidth={2} />
       <Line points={[[-hw, 0, -hd], [-hw, room.height, -hd], [hw, room.height, -hd], [hw, 0, -hd]]} color="#8d9d7d" lineWidth={1} transparent opacity={0.55} />
     </>}
