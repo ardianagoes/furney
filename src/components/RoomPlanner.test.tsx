@@ -86,10 +86,13 @@ describe('3D planner wired to Furney shared state', () => {
       render(<App />);
       const input = screen.getByLabelText('Upload room photo');
       fireEvent.change(input, { target: { files: [new File(['picture'], 'room.png', { type: 'image/png' })] } });
-      expect(screen.getByRole('img', { name: 'Uploaded room reference' }).getAttribute('src')).toBe('blob:test-photo');
+      await screen.findByTestId('floor-photo');
+      expect(screen.getByTestId('floor-photo').getAttribute('data-photo')).toBe('blob:test-photo');
+      expect(screen.queryByRole('img', { name: 'Uploaded room reference' })).toBeNull();
       expect(screen.getByText(/Align the camera manually/)).toBeTruthy();
       fireEvent.click(screen.getByRole('button', { name: 'Remove photo' }));
       expect(revokeUrl).toHaveBeenCalledWith('blob:test-photo');
+      expect(screen.getByTestId('floor-photo').getAttribute('data-photo')).toBe('');
       fireEvent.change(input, { target: { files: [new File(['bad'], 'not-a-photo.txt', { type: 'text/plain' })] } });
       expect(screen.getByRole('alert').textContent).toContain('JPG, PNG, or WebP');
       expect(createUrl).toHaveBeenCalledTimes(1);

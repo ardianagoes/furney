@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { AlertTriangle, Box, CheckCircle2, Grid3X3, ImagePlus, Layers3, RotateCcw, RotateCw, Trash2, X } from 'lucide-react';
 import type { RoomPlannerProps } from '../types';
 import { formatFeetInches } from '../lib/units';
@@ -32,6 +32,8 @@ export function RoomPlanner({ room, products, placedItems, onItemChange, onItemR
   const photoVersion=useRef(0);
   const previousIds = useRef(new Set(placedItems.map(item => item.instanceId)));
   const photoInput = useRef<HTMLInputElement>(null);
+  const photoLoaded=useCallback((width:number,height:number)=>setFrame(f=>({...f,imageWidth:width,imageHeight:height})),[]);
+  const photoFailed=useCallback(()=>setPhotoError('The room photo could not be displayed on the floor. Your original photo is retained for analysis; try another image or remove it.'),[]);
   const sceneRoom = useMemo(() => toSceneRoom(room), [room]);
   const sceneItems = useMemo(() => placedItems.flatMap(item => {
     const product = products.find(p => p.id === item.productId);
@@ -59,13 +61,13 @@ export function RoomPlanner({ room, products, placedItems, onItemChange, onItemR
   function clearAnalysis(){photoVersion.current++;setAnalysis(null);setAnalysisNotice('');onOccupiedAreasChange([]);}
   async function applyAnalysis(result:RoomAnalysis){
     const version=photoVersion.current;
-    const {calibrateFloor,occupiedAreas:project}=await import('../lib/room-photo');
+    const [{calibrateFloor},{floorPhotoAreas}]=await Promise.all([import('../lib/room-photo'),import('../lib/floorPhotoMapping')]);
     if(version!==photoVersion.current)return;
     const rig=cameraStore.getSnapshot();
     const suggestion=calibrateFloor(result,sceneRoom,frame,rig);
     const camera=suggestion?.rig??rig, offset=suggestion?.alignment??alignment;
     if(suggestion){setRig(camera);setAlignment(offset);setShowGrid(true);}
-    const projected=project(result,camera,offset,frame);
+    const projected=floorPhotoAreas(result,frame.imageWidth,frame.imageHeight,room.widthM,room.depthM);
     // Reject huge/off-room projections instead of presenting them as measured.
     const areas=projected.areas.filter(a=>a.w<=room.widthM*2&&a.d<=room.depthM*2&&Math.abs(a.x)<=room.widthM&&Math.abs(a.z)<=room.depthM);
     setAnalysis(result);onOccupiedAreasChange(areas);
@@ -80,7 +82,7 @@ export function RoomPlanner({ room, products, placedItems, onItemChange, onItemR
       setPhotoError('Choose a JPG, PNG, or WebP image up to 8 MB.');
       return;
     }
-    clearAnalysis();setAlignment({x:0,y:0});setPhoto(URL.createObjectURL(file));
+    clearAnalysis();setAlignment({x:0,y:0});setShowGrid(true);setPhoto(URL.createObjectURL(file));
     setPhotoError('');
   }
 
@@ -102,13 +104,12 @@ export function RoomPlanner({ room, products, placedItems, onItemChange, onItemR
       <button type="button" onClick={()=>{cameraStore.set(topDownRig(room,frame.width/frame.height),'top');setAlignment({x:0,y:0});}}>Top-down view</button>
     </div>
     {photoError && <p role="alert" className="scene-notice scene-error">{photoError}</p>}
-    {photo && <p className="scene-notice">Photo overlay is a visual reference. Align the camera manually; your room measurements still control fit.</p>}
+    {photo && <p className="scene-notice">Your photo is a floor reference, center-cropped to fit without stretching. It does not map furniture or walls to accurate geometry. Align the camera manually; your measured room dimensions still control fit.</p>}
     {photo&&import.meta.env.VITE_ENABLE_ROOM_ANALYSIS==='true'&&<RoomPhotoAnalysis photo={photo} analysis={analysis} areas={occupiedAreas} room={room} onAnalysis={applyAnalysis} onAlign={()=>{if(analysis)void applyAnalysis(analysis);}} onClear={clearAnalysis} onAreasChange={onOccupiedAreasChange}/>}
     {analysisNotice&&<p role="status" className="scene-notice">{analysisNotice}</p>}
     <div className="scene-viewport" ref={viewport}>
-      {photo && <img className="room-photo" src={photo} alt="Uploaded room reference" onLoad={e=>{const image=e.currentTarget;setFrame(f=>({...f,imageWidth:image.naturalWidth,imageHeight:image.naturalHeight}));}} onError={() => { clearAnalysis();setPhoto(null); setPhotoError('The selected photo could not be displayed.'); }} />}
       <div className="scene-renderer"><SceneBoundary><Suspense fallback={<div className="scene-loading" role="status">Loading your 3D room…</div>}>
-        <RoomScene room={sceneRoom} items={sceneItems} selectedId={selected?.instanceId ?? null} showGrid={showGrid} photoMode={photo !== null} rig={cameraStore.getSnapshot()} cameraStore={cameraStore} alignment={alignment} occupied={occupiedAreas} onSelect={setSelectedId} onMove={move} />
+        <RoomScene room={sceneRoom} items={sceneItems} selectedId={selected?.instanceId ?? null} showGrid={showGrid} photo={photo} onPhotoLoad={photoLoaded} onPhotoError={photoFailed} rig={cameraStore.getSnapshot()} cameraStore={cameraStore} alignment={alignment} occupied={occupiedAreas} onSelect={setSelectedId} onMove={move} />
       </Suspense></SceneBoundary></div>
       <div className={`scene-fit-badge ${issues.length > 0 ? 'has-issues' : ''}`} role="status">
         {issues.length > 0 ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}
