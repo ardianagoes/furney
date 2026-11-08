@@ -1,12 +1,14 @@
 // Adapted from Angelo's RoomScene @ f541bc9f521201cccc1e0b15aaa58abc3bb5c284.
-import { Canvas, useThree, type ThreeEvent } from '@react-three/fiber';
+import { Canvas, useThree, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { Environment, Grid, Lightformer, Line } from '@react-three/drei';
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { itemProblems, footprint, type SceneItem, type Room } from '../../lib/room';
 import { FurnitureMesh } from './Furniture';
 import type { OccupiedArea } from '../../lib/room-photo-types';
 import { occupiedBy } from '../../lib/occupiedAreas';
+import type {CameraStore} from '../../lib/cameraControls';
+import {applyCameraPose} from '../../lib/cameraPose';
 
 export interface CameraRig {
   height: number;
@@ -17,6 +19,7 @@ export interface CameraRig {
 }
 
 export interface RoomSceneProps {
+  cameraStore?: CameraStore;
   alignment: {x:number;y:number};
   occupied: readonly OccupiedArea[];
   room: Room;
@@ -29,19 +32,17 @@ export interface RoomSceneProps {
   onMove: (id: string, x: number, z: number) => void;
 }
 
-function Rig({ rig,alignment }: { rig: CameraRig;alignment:{x:number;y:number} }) {
+function Rig({ rig,alignment,store }: { rig: CameraRig;alignment:{x:number;y:number};store?:CameraStore }) {
   const { camera,size } = useThree();
-  useEffect(() => {
-    const cam = camera as THREE.PerspectiveCamera;
-    const yaw = THREE.MathUtils.degToRad(rig.yaw);
-    const pitch = THREE.MathUtils.degToRad(rig.pitch);
-    cam.fov = rig.fov;
-    cam.position.set(Math.sin(yaw) * rig.distance, rig.height, Math.cos(yaw) * rig.distance);
-    cam.rotation.order = 'YXZ';
-    cam.rotation.set(-pitch, yaw, 0);
-    cam.setViewOffset(size.width,size.height,-alignment.x*size.width,-alignment.y*size.height,size.width,size.height);
-    cam.updateProjectionMatrix();
-  }, [camera, rig,alignment,size.width,size.height]);
+  const previous=useRef<{pose:CameraRig;width:number;height:number;x:number;y:number}|null>(null);
+  // R3F runs this on requestAnimationFrame, reading the newest input directly.
+  // No debounce, interpolation tail, scene re-render or redundant projection work.
+  useFrame(()=>{
+    const pose=store?.getSnapshot()??rig, last=previous.current;
+    if(last?.pose===pose&&last.width===size.width&&last.height===size.height&&last.x===alignment.x&&last.y===alignment.y)return;
+    applyCameraPose(camera as THREE.PerspectiveCamera,pose,size.width,size.height,alignment);
+    previous.current={pose,width:size.width,height:size.height,x:alignment.x,y:alignment.y};
+  });
   return null;
 }
 
@@ -91,7 +92,7 @@ export function SceneFurniture({ item, problems, selected, onSelect, onMove }: {
   </group>;
 }
 
-export function RoomScene({ room, items, selectedId, showGrid, photoMode, rig, alignment,occupied, onSelect, onMove }: RoomSceneProps) {
+export function RoomScene({ room, items, selectedId, showGrid, photoMode, rig, cameraStore,alignment,occupied, onSelect, onMove }: RoomSceneProps) {
   const problems = useMemo(() => Object.fromEntries(items.map(item => [item.id, [...itemProblems(item, items, room),...(occupiedBy(item,occupied)?['Overlaps detected existing furniture']:[])]])), [items, room,occupied]);
   const hw = room.width / 2, hd = room.depth / 2;
   const extent = Math.max(room.width, room.depth, room.height);
@@ -103,7 +104,7 @@ export function RoomScene({ room, items, selectedId, showGrid, photoMode, rig, a
     fallback={<div className="scene-unavailable">3D needs WebGL2. Your furniture list and placement controls still work.</div>}
     aria-label="Interactive room canvas"
   >
-    <Rig rig={rig} alignment={alignment} />
+    <Rig rig={rig} alignment={alignment} store={cameraStore} />
     <ambientLight intensity={0.7} />
     <directionalLight position={[extent, extent * 2, extent]} intensity={1.6} castShadow shadow-mapSize={[1024, 1024]}
       shadow-camera-left={-extent} shadow-camera-right={extent} shadow-camera-top={extent} shadow-camera-bottom={-extent} shadow-camera-far={extent * 5} />

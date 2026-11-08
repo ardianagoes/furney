@@ -277,10 +277,18 @@ h2 { font-family: var(--font-serif); font-size: clamp(30px, 3vw, 41px); font-wei
 .scene-warnings summary, .camera-controls summary { cursor: pointer; width: fit-content; }
 .scene-warnings { color: #9c5e40; }
 .scene-warnings ul { margin: 10px 0 0; padding-left: 16px; max-height: 130px; overflow-y: auto; line-height: 1.8; }
-.camera-sliders { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; margin-top: 17px; }
+.camera-sliders { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 17px; }
 .camera-sliders label > span { display: flex; justify-content: space-between; gap: 8px; }
 .camera-sliders output { font-variant-numeric: tabular-nums; }
-.camera-sliders input { width: 100%; margin-top: 9px; accent-color: #647f50; }
+.camera-field-heading { display: flex; align-items: center; gap: 8px; }
+.camera-field-heading label { flex: 1; font-size: 12px; }
+.camera-number { width: 96px; padding: 7px 9px; border: 1px solid #c7d2bc; border-radius: 6px; background: #fafbf5; color: #344b32; font-variant-numeric: tabular-nums; }
+.camera-sliders input[type="range"] { appearance: none; width: 100%; height: 44px; margin: 0; background: transparent; cursor: pointer; touch-action: none; }
+.camera-sliders input[type="range"]::-webkit-slider-runnable-track { height: 8px; background: #d0dbc5; border-radius: 8px; }
+.camera-sliders input[type="range"]::-moz-range-track { height: 8px; background: #d0dbc5; border-radius: 8px; }
+.camera-sliders input[type="range"]::-webkit-slider-thumb { appearance: none; width: 24px; height: 24px; margin-top: -8px; border: 3px solid #fafbf5; border-radius: 50%; background: #526e42; box-shadow: 0 0 0 1px #526e42; }
+.camera-sliders input[type="range"]::-moz-range-thumb { width: 19px; height: 19px; border: 3px solid #fafbf5; border-radius: 50%; background: #526e42; box-shadow: 0 0 0 1px #526e42; }
+.camera-sliders input:focus-visible { outline: 2px solid #647f50; outline-offset: 3px; }
 .scene-unavailable, .scene-loading { min-height: 100%; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center; padding: 25px; font-size: 13px; text-align: center; color: #637952; }
 .scene-unavailable .button { font-size: 12px; padding: 9px 12px; }
 
