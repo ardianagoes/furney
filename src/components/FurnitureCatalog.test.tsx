@@ -13,13 +13,13 @@ afterEach(cleanup);
 describe('catalog UI in Furney', () => {
   it('labels samples, imported prices, and external retailer links accurately', () => {
     render(<FurnitureCatalog products={furnitureProducts} placedItems={[]} onAddProduct={() => {}} />);
-    expect(screen.getAllByRole('article')).toHaveLength(21);
-    expect(screen.getAllByText('Sample product')).toHaveLength(15);
-    expect(screen.getAllByText('IKEA link')).toHaveLength(6);
+    expect(screen.getAllByRole('article')).toHaveLength(19);
+    expect(screen.queryByText('Sample product')).toBeNull();
+    expect(screen.getAllByText('IKEA link')).toHaveLength(19);
     expect(screen.queryByText(/verified retailer/i)).toBeNull();
-    expect(screen.getByText(/not live or independently verified/)).toBeTruthy();
+    expect(screen.getByText(/Prices and availability can change/)).toBeTruthy();
     const link = screen.getByRole('link', { name: /View KIVIK Sofa/ });
-    expect(link.getAttribute('href')).toBe(furnitureProducts[15].retailerUrl);
+    expect(link.getAttribute('href')).toBe(furnitureProducts[0].retailerUrl);
     expect(link.getAttribute('target')).toBe('_blank');
     expect(link.getAttribute('rel')).toBe('noopener noreferrer');
   });
@@ -31,15 +31,15 @@ describe('catalog UI in Furney', () => {
     await user.click(screen.getByRole('button', { name: 'Desks' }));
     await user.selectOptions(screen.getByRole('combobox', { name: 'Sort by price' }), 'asc');
     expect(screen.getAllByRole('article').map(card => within(card).getByRole('heading').textContent)).toEqual([
-      furnitureProducts[18].title, furnitureProducts[17].title,
+      furnitureProducts[3].title, furnitureProducts[2].title,
     ]);
     await user.selectOptions(screen.getByRole('combobox', { name: 'Sort by price' }), 'desc');
-    expect(within(screen.getAllByRole('article')[0]).getByRole('heading').textContent).toBe(furnitureProducts[17].title);
+    expect(within(screen.getAllByRole('article')[0]).getByRole('heading').textContent).toBe(furnitureProducts[2].title);
     await user.click(screen.getByRole('button', { name: 'Sofas' }));
     expect(screen.queryAllByRole('article')).toHaveLength(0);
     expect(screen.getByText('No pieces found')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Clear filters' }));
-    expect(screen.getAllByRole('article')).toHaveLength(21);
+    expect(screen.getAllByRole('article')).toHaveLength(19);
     expect((screen.getByRole('combobox') as HTMLSelectElement).value).toBe('none');
   });
 
@@ -49,7 +49,7 @@ describe('catalog UI in Furney', () => {
     const selection = screen.getByRole('region', { name: /Your room, piece by piece/ });
     const canvas = screen.getByRole('region', { name: 'Interactive 3D room planner' });
     const sample = furnitureProducts[0];
-    const desk = furnitureProducts[17];
+    const desk = furnitureProducts[2];
     await user.click(screen.getByRole('button', { name: `Add ${sample.title} to your room` }));
     await user.click(screen.getByRole('button', { name: `Add ${desk.title} to your room` }));
     await user.click(screen.getByRole('button', { name: `Add ${desk.title} to your room` }));
@@ -57,7 +57,7 @@ describe('catalog UI in Furney', () => {
     expect(within(selection).getByText('$1,518.98')).toBeTruthy();
     expect(within(canvas).getByText('3 pieces selected')).toBeTruthy();
     expect(within(selection).getAllByRole('link', { name: /View selected MICKE/ })).toHaveLength(2);
-    await user.type(screen.getByRole('searchbox', { name: 'Search furniture' }), 'Haven');
+    await user.type(screen.getByRole('searchbox', { name: 'Search furniture' }), 'MALM');
     await user.click(screen.getByRole('button', { name: 'Beds' }));
     await user.selectOptions(screen.getByRole('combobox', { name: 'Sort by price' }), 'desc');
     expect(screen.getAllByRole('article')).toHaveLength(1);
@@ -73,9 +73,9 @@ describe('catalog UI in Furney', () => {
   });
 
   it('shows image-unavailable fallbacks when an external product image fails', () => {
-    render(<FurnitureCatalog products={[furnitureProducts[15]]} placedItems={[]} onAddProduct={() => {}} />);
-    fireEvent.error(screen.getByRole('img', { name: furnitureProducts[15].title }));
-    expect(screen.getByRole('img', { name: `${furnitureProducts[15].title}: image unavailable` })).toBeTruthy();
+    render(<FurnitureCatalog products={[furnitureProducts[0]]} placedItems={[]} onAddProduct={() => {}} />);
+    fireEvent.error(screen.getByRole('img', { name: furnitureProducts[0].title }));
+    expect(screen.getByRole('img', { name: `${furnitureProducts[0].title}: image unavailable` })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Add KIVIK/ })).toBeTruthy();
   });
 });

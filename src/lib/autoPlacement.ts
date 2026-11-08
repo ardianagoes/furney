@@ -1,6 +1,7 @@
 import type { FurnitureProduct, PlacedItem, RoomDimensions } from '../types';
 import { toFurneyPosition, toSceneItem, toSceneRoom } from './plannerAdapter';
 import { fitsInRoom, footprint, overlaps } from './room';
+import type { OccupiedArea } from './room-photo-types';
 
 /** Try center first, then boundary/contact positions nearest the center.
  * AABB free-space boundaries lie on room edges or obstacle edges. Their cross
@@ -10,12 +11,14 @@ import { fitsInRoom, footprint, overlaps } from './room';
 export function findAvailablePlacement(
   item: PlacedItem, product: FurnitureProduct, room: RoomDimensions,
   placedItems: readonly PlacedItem[], products: readonly FurnitureProduct[],
+  occupied: readonly OccupiedArea[] = [],
 ): PlacedItem {
   const sceneRoom = toSceneRoom(room);
   const existing = placedItems.flatMap(placed => {
     const record = products.find(p => p.id === placed.productId);
     return record ? [toSceneItem(placed, record, room)] : [];
   });
+  existing.push(...occupied.map(a=>({id:'detected-'+a.id,label:a.label,type:'box' as const,x:a.x,z:a.z,w:a.w,d:a.d,h:0,rot:0 as const,color:'#c5934b'})));
   const fallback = { ...item, xM: room.widthM / 2, zM: room.depthM / 2 };
   for (const rotationDeg of [0, 90] as const) {
     const candidate = toSceneItem({ ...fallback, rotationDeg }, product, room);

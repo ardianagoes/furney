@@ -6,8 +6,8 @@ import { createPhotoHandler, createRateLimiter, validateImage } from './photo-ha
 import { analyzeFurniturePhoto } from './photo-analysis.server';
 import { MAX_IMAGE_BYTES } from '../src/lib/photo-search-types';
 
-const chair = `data:image/jpeg;base64,${readFileSync(new URL('../src/assets/furniture/chair-2.jpg', import.meta.url)).toString('base64')}`;
-const sofa = `data:image/jpeg;base64,${readFileSync(new URL('../src/assets/furniture/sofa-1.jpg', import.meta.url)).toString('base64')}`;
+const chair = `data:image/jpeg;base64,${readFileSync(new URL('../src/assets/ikea/00457235.jpg', import.meta.url)).toString('base64')}`;
+const sofa = `data:image/jpeg;base64,${readFileSync(new URL('../src/assets/ikea/80519531.jpg', import.meta.url)).toString('base64')}`;
 const analysis = { isFurniture: true, category: 'Chairs', primaryColor: 'brown', material: 'wood', style: 'scandinavian', keywords: ['dining', 'wood'] };
 const providerResponse = (value: unknown) => new Response(JSON.stringify({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(value) }] }] }), { status: 200 });
 

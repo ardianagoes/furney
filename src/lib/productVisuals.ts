@@ -16,10 +16,10 @@ const seating: SeatingAppearance = {
   chaise: 'none', legShape: 'tapered', upholstery: 'woven', cushionHeight: 0.16,
 };
 const seatingTraits: Record<string, Partial<SeatingAppearance>> = {
-  'sofa-1': { seats: 3, arms: 'wide', legHeight: 0.07, silhouette: 'boxy', armProfile: 'rectangular' },
-  'sofa-2': { seats: 2, back: 'single', silhouette: 'rounded', armProfile: 'sloped', legHeight: 0.2, armHeight: 0.79, softness: 0.13, backSlope: 0.04 },
-  'sofa-3': { seats: 3, legs: 'hidden', legHeight: 0.03, chaise: 'right', regularDepth: 0.54, silhouette: 'boxy', armProfile: 'rectangular', armWidth: 0.065, backDepth: 0.13 },
-  'chair-1': { seats: 1, back: 'single', arms: 'slim', armProfile: 'rounded', silhouette: 'plush', softness: 0.16, legHeight: 0.23, legShape: 'splayed', armHeight: 0.64, seatCushion: 'bench' },
+  'ikea-morabo-89318321': { seats: 2, back: 'tufted', legHeight: 0.19, armProfile: 'rectangular', silhouette: 'boxy' },
+  'ikea-morabo-39575884': { seats: 3, back: 'tufted', legHeight: 0.19, chaise: 'right', regularDepth: 0.58, armWidth: 0.055, backDepth: 0.13 },
+  'ikea-poaeng-59305928': { seats: 1, back: 'single', arms: 'slim', legShape: 'sled', legHeight: 0.24, armWidth: 0.04, armHeight: 0.54, seatHeight: 0.42, backSlope: 0.14 },
+  'ikea-strandmon-90359829': { seats: 1, back: 'tufted', arms: 'rolled', legHeight: 0.15, seatHeight: 0.45, armHeight: 0.65, silhouette: 'plush' },
   'ikea-kivik-80519531': { seats: 3, arms: 'wide', armHeight: 0.62, legHeight: 0.035, legs: 'hidden', silhouette: 'boxy', upholstery: 'leather' },
   'ikea-uppland-19384116': { seats: 3, arms: 'rolled', armProfile: 'rolled', legHeight: 0.06, legs: 'hidden', silhouette: 'plush', softness: 0.12 },
 };
@@ -37,7 +37,7 @@ export function productVisuals(product: FurnitureProduct, type: FurnitureType, f
     legStyle: /tapered/.test(traits) ? 'tapered' : /splayed/.test(traits) ? 'splayed' : 'straight',
   };
   if (type === 'chair') Object.assign(structure, {
-    backStyle: /dining/.test(traits) ? 'slatted' : 'solid',
+    backStyle: /slatted/.test(traits) ? 'slatted' : 'solid',
     ...(/office|wheels|swivel/.test(traits) ? { variant: 'office', material: 'metal' } : {}),
   });
   if (type === 'table' || type === 'coffeeTable') Object.assign(structure, {
@@ -53,7 +53,7 @@ export function productVisuals(product: FurnitureProduct, type: FurnitureType, f
     ...(/micke/.test(traits) ? { supports: 'panels' } : {}),
   });
   if (type === 'bed') Object.assign(structure, {
-    headboard: /upholstered/.test(traits) ? 'upholstered' : /rails|daybed/.test(traits) ? 'slatted' : 'solid',
+    headboard: /upholstered/.test(traits) ? 'upholstered' : /rails|daybed|slatted/.test(traits) ? 'slatted' : 'solid',
     ...(/daybed/.test(traits) ? { variant: 'daybed' } : {}),
   });
   return { color, structure };

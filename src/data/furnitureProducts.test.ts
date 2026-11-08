@@ -1,38 +1,34 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { furnitureProducts } from './furnitureProducts';
+import { furnitureAttributes } from './furnitureAttributes';
+import sources from '../../docs/ikea-catalog-sources.json';
 import { createInitialState, getPriceEstimate, plannerReducer } from '../state/plannerState';
-
-describe('Shreya catalog import', () => {
-  it('includes all 15 samples and six IKEA-linked products with unique IDs', () => {
-    expect(furnitureProducts).toHaveLength(21);
-    expect(furnitureProducts.filter(p => p.retailerUrl === null)).toHaveLength(15);
-    expect(furnitureProducts.filter(p => p.retailerUrl !== null)).toHaveLength(6);
-    expect(new Set(furnitureProducts.map(p => p.id)).size).toBe(21);
-    expect(furnitureProducts.every(p => [p.widthM, p.depthM, p.heightM].every(n => Number.isFinite(n) && n > 0))).toBe(true);
-    expect(furnitureProducts.every(p => p.priceUSD === null || (Number.isFinite(p.priceUSD) && p.priceUSD >= 0))).toBe(true);
-    expect(furnitureProducts.some(p => p.id.startsWith('demo-'))).toBe(false);
-  });
-  it('contains 15 local JPEG files, each referenced by its sample product', () => {
-    const dir = new URL('../assets/furniture/', import.meta.url);
-    const images = readdirSync(dir).filter(name => name.endsWith('.jpg'));
-    expect(images).toHaveLength(15);
-    for (const product of furnitureProducts.filter(p => p.retailerUrl === null)) {
-      expect(images).toContain(`${product.id}.jpg`);
-      expect(product.imageUrl).toContain(`${product.id}.jpg`);
-      expect(readFileSync(new URL(`${product.id}.jpg`, dir)).subarray(0, 2).toString('hex')).toBe('ffd8');
+describe('verified IKEA-only public catalog', () => {
+  it('has at least 18 real, unique, sourced products across all five categories', () => {
+    expect(furnitureProducts.length).toBeGreaterThanOrEqual(18);
+    expect(new Set(furnitureProducts.map(p=>p.id)).size).toBe(furnitureProducts.length);
+    expect(new Set(furnitureProducts.map(p=>p.category))).toEqual(new Set(['Sofas','Chairs','Beds','Desks','Tables']));
+    for(const p of furnitureProducts) {
+      expect(p.id).toMatch(/^ikea-/);
+      expect(p.retailerUrl).toMatch(/^https:\/\/www.ikea.com\/us\/en\/p\//);
+      expect([p.widthM,p.depthM,p.heightM,p.priceUSD!].every(n=>Number.isFinite(n)&&n>0)).toBe(true);
+      expect(furnitureAttributes[p.id]).toBeTruthy();
+      expect(sources.find(s=>s.id===p.id)?.priceUSD).toBe(p.priceUSD);
+      const article = sources.find(s=>s.id===p.id)!.article.replaceAll('.','');
+      expect(readFileSync(new URL('../assets/ikea/'+article+'.jpg',import.meta.url)).subarray(0,2).toString('hex')).toBe('ffd8');
     }
   });
-  it('preserves imported dimensions, fractional prices, and retailer URLs', () => {
-    expect(furnitureProducts.find(p => p.id === 'ikea-kivik-80519531')).toMatchObject({ widthM: 2.270125, depthM: 0.949325, heightM: 0.828675, priceUSD: 1299 });
-    expect(furnitureProducts.find(p => p.id === 'ikea-micke-80213074')).toMatchObject({ priceUSD: 109.99, retailerUrl: 'https://www.ikea.com/us/en/p/micke-desk-white-80213074/' });
+  it('uses assembled frame extents, full chaise depth, table diameter and exact inch conversion', () => {
+    expect(furnitureProducts.find(p=>p.id==='ikea-malm-19931605')).toMatchObject({widthM:1.679575,depthM:2.111375,heightM:1.000125});
+    expect(furnitureProducts.find(p=>p.id==='ikea-morabo-39575884')?.depthM).toBeCloseTo(62.25*0.0254,10);
+    expect(furnitureProducts.find(p=>p.id==='ikea-lisabo-40416498')).toMatchObject({widthM:1.050925,depthM:1.050925});
+    expect(furnitureProducts.find(p=>p.id==='ikea-lack-90449905')).toMatchObject({widthM:0.898525,depthM:0.549275});
   });
-  it('adds every imported product through the existing reducer and totals to exact cents', () => {
-    let state = createInitialState(furnitureProducts);
-    for (const product of furnitureProducts) {
-      state = plannerReducer(state, { type: 'product/add', productId: product.id, instanceId: `instance-${product.id}` });
-    }
-    expect(state.placedItems).toHaveLength(21);
-    expect(getPriceEstimate(state.products, state.placedItems)).toEqual({ total: 13009.96, unpricedCount: 0 });
+  it('adds every actual catalog product and totals the verified snapshots to cents', () => {
+    let state=createInitialState(furnitureProducts);
+    for(const p of furnitureProducts) state=plannerReducer(state,{type:'product/add',productId:p.id,instanceId:p.id});
+    expect(state.placedItems).toHaveLength(19);
+    expect(getPriceEstimate(state.products,state.placedItems)).toEqual({total:6841.4,unpricedCount:0});
   });
 });

@@ -5,7 +5,7 @@ import { createInitialState, plannerReducer } from '../state/plannerState';
 import type { PlacedItem } from '../types';
 
 const room = { widthM: 4, depthM: 6, heightM: 2.6 };
-const item: PlacedItem = { instanceId: 'piece', productId: 'sofa-1', xM: 2, zM: 3, rotationDeg: 0 };
+const item: PlacedItem = { instanceId: 'piece', productId: 'ikea-kivik-80519531', xM: 2, zM: 3, rotationDeg: 0 };
 
 describe('Furney <-> Angelo coordinate boundary', () => {
   it('maps the room center and both floor corners without reversing axes', () => {
@@ -18,7 +18,7 @@ describe('Furney <-> Angelo coordinate boundary', () => {
     const product = furnitureProducts[0];
     const position = { ...item, xM: 0.75, zM: 4.5, rotationDeg };
     const scene = toSceneItem(position, product, room);
-    expect(scene).toMatchObject({ id: 'piece', w: 2.1, d: 0.92, h: 0.84, x: -1.25, z: 1.5, rot: rotationDeg, type: 'sofa' });
+    expect(scene).toMatchObject({ id: 'piece', w: product.widthM, d: product.depthM, h: product.heightM, x: -1.25, z: 1.5, rot: rotationDeg, type: 'sofa' });
     expect(toFurneyPosition(scene.x, scene.z, room)).toEqual({ xM: position.xM, zM: position.zM });
   });
   it('round-trips a drag through the real reducer, retaining product and instance identity', () => {

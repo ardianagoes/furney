@@ -49,7 +49,7 @@ describe('3D planner wired to Furney shared state', () => {
     fireEvent.change(within(planner).getByRole('spinbutton', { name: 'Selected piece X in meters' }), { target: { value: '1.8288' } });
     fireEvent.change(within(planner).getByRole('spinbutton', { name: 'Selected piece Z in meters' }), { target: { value: '2.1336' } });
     await waitFor(() => expect(within(planner).getByText('2 pieces need attention')).toBeTruthy());
-    expect(within(planner).getAllByText(/Overlaps Linden/).length).toBeGreaterThan(0);
+    expect(within(planner).getAllByText(/Overlaps KIVIK/).length).toBeGreaterThan(0);
     const x = within(planner).getByRole('spinbutton', { name: 'Selected piece X in meters' });
     fireEvent.change(x, { target: { value: '0' } });
     expect(within(planner).getAllByText(/Outside room bounds/).length).toBeGreaterThan(0);

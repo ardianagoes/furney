@@ -15,7 +15,7 @@ export function PlannerWorkspace() {
       <div className="workspace-grid">
         <div className="workspace-room">
           <RoomDimensionsForm room={state.room} onChange={room => dispatch({ type: 'room/update', room })} />
-          <RoomPlanner room={state.room} products={state.products} placedItems={state.placedItems} onItemChange={item => dispatch({ type: 'item/update', item })} onItemRemove={instanceId => dispatch({ type: 'item/remove', instanceId })} />
+          <RoomPlanner room={state.room} products={state.products} placedItems={state.placedItems} occupiedAreas={state.occupiedAreas} onOccupiedAreasChange={areas=>dispatch({type:'occupied/update',areas})} onItemChange={item => dispatch({ type: 'item/update', item })} onItemRemove={instanceId => dispatch({ type: 'item/remove', instanceId })} />
         </div>
         <FurnitureCatalog products={state.products} placedItems={state.placedItems} onAddProduct={productId => {
           dispatch({ type: 'product/add', productId, instanceId: crypto.randomUUID() });
@@ -24,7 +24,7 @@ export function PlannerWorkspace() {
         }} />
         <SelectedFurniture products={state.products} items={state.placedItems} onRemove={instanceId => { dispatch({ type: 'item/remove', instanceId }); setAnnouncement('Piece removed from your room.'); }} onClear={() => { dispatch({ type: 'items/clear' }); setAnnouncement('Your furniture list is now empty.'); }} />
       </div>
-      <div className="workspace-note"><span><span className="note-dot" /> A work in progress, with room to grow.</span><p>Explore your room in 3D. AI-powered discovery is on the horizon.</p><a href="#how-it-works">Back to the basics <ArrowUpRight size={14} /></a></div>
+      <div className="workspace-note"><span><span className="note-dot" /> A work in progress, with room to grow.</span><p>Explore your room in 3D. Find IKEA pieces by photo and plan your space.</p><a href="#how-it-works">Back to the basics <ArrowUpRight size={14} /></a></div>
       <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
     </div>
   </section>;

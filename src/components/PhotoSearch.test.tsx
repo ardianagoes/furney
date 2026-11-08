@@ -27,12 +27,12 @@ describe('photo search and honest manual fallback', () => {
     expect(screen.getByText('Manual search — no photo was analyzed')).toBeTruthy();
     const results = screen.getByRole('list', { name: 'Photo search matches' });
     expect(within(results).getAllByRole('button', { name: /^Add photo match/ })).toHaveLength(3);
-    expect(within(results).queryByText('Linden Three-Seat Sofa')).toBeNull();
+    expect(within(results).queryByText('KIVIK Sofa, Grann/Bomstad black')).toBeNull();
     await user.click(screen.getByText('Manual search (no AI)'));
     await user.selectOptions(screen.getByRole('combobox', { name: 'Manual furniture category' }), 'Sofas');
     await user.click(screen.getByRole('button', { name: 'Find matches' }));
-    expect(within(results).getByText('Linden Three-Seat Sofa')).toBeTruthy();
-    expect(within(results).queryByText('Arlo Lounge Armchair')).toBeNull();
+    expect(within(results).getByText('KIVIK Sofa, Grann/Bomstad black')).toBeTruthy();
+    expect(within(results).queryByText('POÄNG Armchair, birch veneer/Knisa light beige')).toBeNull();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -86,7 +86,7 @@ describe('photo search and honest manual fallback', () => {
     expect(within(selected).getByText('$0')).toBeTruthy();
     await user.click(within(photoSearch).getByRole('button', { name: 'Close photo search' }));
     expect(screen.queryByRole('region', { name: 'Photo search' })).toBeNull();
-    expect(screen.getAllByRole('article')).toHaveLength(21);
+    expect(screen.getAllByRole('article')).toHaveLength(19);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -95,7 +95,7 @@ describe('photo search and honest manual fallback', () => {
     render(<PhotoSearch products={furnitureProducts} onAddProduct={() => {}} />);
     fireEvent.change(screen.getByLabelText('Upload furniture photo'), { target: { files: [new File(['test image'], 'chair.jpg', { type: 'image/jpeg' })] } });
     await screen.findByText('AI description — please review');
-    expect(screen.getByRole('list', { name: 'Photo search matches' }).textContent).toContain('Ergo Mesh Office Chair');
+    expect(screen.getByRole('list', { name: 'Photo search matches' }).textContent).toContain('STRANDMON');
   });
 
   it('ignores an old AI request after the user chooses manual search', async () => {
@@ -112,6 +112,6 @@ describe('photo search and honest manual fallback', () => {
     resolve(new Response(JSON.stringify({ ok: true, analysis: { category: 'Sofas', primaryColor: 'grey', material: 'fabric', style: 'modern', keywords: [] } }), { headers: { 'Content-Type': 'application/json' } }));
     await waitFor(() => expect(screen.getByText('Manual search — no photo was analyzed')).toBeTruthy());
     expect(screen.queryByText(/AI description/)).toBeNull();
-    expect(screen.getByRole('list', { name: 'Photo search matches' }).textContent).not.toContain('Linden');
+    expect(screen.getByRole('list', { name: 'Photo search matches' }).textContent).not.toContain('KIVIK');
   });
 });

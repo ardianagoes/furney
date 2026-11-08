@@ -251,6 +251,13 @@ h2 { font-family: var(--font-serif); font-size: clamp(30px, 3vw, 41px); font-wei
 .scene-viewport { height: 390px; position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 70%, #f0f3e9, #e4ead9); }
 .scene-renderer, .room-photo { position: absolute; inset: 0; width: 100%; height: 100%; }
 .room-photo { object-fit: cover; }
+.room-analysis-panel { padding: 0 18px 16px; font-size: 12px; line-height: 1.6; color: #53664b; border-bottom: 1px solid #dbe2d0; }
+.room-analysis-panel p { margin: 8px 0; }
+.room-analysis-panel [role="alert"] { color: #a64937; }
+.room-analysis-panel fieldset { margin: 10px 0; padding: 10px; border: 1px solid #dbe2d0; border-radius: 8px; }
+.room-area-fields { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
+.room-area-fields input { display: block; width: 100%; min-width: 0; background: #fafbf5; border: 1px solid #dbe2d0; border-radius: 4px; padding: 6px; }
+.room-analysis-panel button { cursor: pointer; padding: 5px 10px; background: #f7f8ef; border: 1px solid #dbe2d0; border-radius: 5px; }
 .scene-renderer canvas { touch-action: none; }
 .scene-fit-badge { position: absolute; top: 14px; left: 16px; pointer-events: none; display: flex; align-items: center; gap: 6px; background: #f8fbeeec; border: 1px solid #cedbbf; border-radius: 5px; padding: 8px 10px; color: #5d754d; font-size: 11px; }
 .scene-fit-badge.has-issues { background: #fff3e9ed; border-color: #e1c5ae; color: #9f5339; }

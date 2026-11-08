@@ -1,5 +1,7 @@
 # Furney
 
+Final submission catalog: **19 real IKEA US products**, verified November 8, 2026, with local official images and snapshot prices. All fictional public products are removed. See [final submission notes](docs/FINAL_SUBMISSION.md) and [listing sources](docs/ikea-catalog-sources.json) for current behavior and verification. Experimental room-photo analysis is implemented but disabled by default pending live validation; existing Production furniture photo search and server-side OpenAI configuration are preserved. Earlier integration details below describe historical milestones.
+
 **Your room. Your dimensions. Your budget.**
 
 The React + TypeScript frontend for Furney, built for a Brown University hackathon. Includes a responsive landing page, room dimensions, Angelo's interactive React Three Fiber room planner, Shreya's catalog and photo/manual matching, selected furniture list, and estimated pricing. The optional OpenAI image-analysis endpoint requires a server-side key; all manual search and room planning work without one. The 3D view requires WebGL2; catalog, pricing, and numeric placement controls remain available if 3D cannot start.

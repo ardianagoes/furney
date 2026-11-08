@@ -18,7 +18,7 @@ export const toSceneRoom = (room: RoomDimensions): Room => ({ width: room.widthM
 export function categoryModel(category: string, title = ''): FurnitureType {
   switch (category.toLowerCase()) {
     case 'sofa': case 'sofas': return 'sofa';
-    case 'chair': case 'chairs': return /dining|office/i.test(title) ? 'chair' : 'armchair';
+    case 'chair': case 'chairs': return /dining|office|lisabo/i.test(title) ? 'chair' : 'armchair';
     case 'armchairs': return 'armchair';
     case 'seating': return /sofa|loveseat|sectional/i.test(title) ? 'sofa' : 'armchair';
     case 'bed': case 'beds': return 'bed';

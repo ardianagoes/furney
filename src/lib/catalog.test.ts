@@ -5,7 +5,7 @@ import { getRetailerLink, getVisibleProducts } from './catalog';
 describe('catalog search, categories, and sorting', () => {
   it('matches titles and categories case-insensitively and ignores outer whitespace', () => {
     expect(getVisibleProducts(furnitureProducts, '  MiCkE  ', 'All', 'none').map(p => p.id)).toEqual(['ikea-micke-80213074', 'ikea-micke-30213076']);
-    expect(getVisibleProducts(furnitureProducts, 'beds', 'All', 'none')).toHaveLength(3);
+    expect(getVisibleProducts(furnitureProducts, 'beds', 'All', 'none')).toHaveLength(2);
   });
   it('combines search with category filtering and both price orders', () => {
     expect(getVisibleProducts(furnitureProducts, 'MICKE', 'Desks', 'asc').map(p => p.priceUSD)).toEqual([69.99, 109.99]);

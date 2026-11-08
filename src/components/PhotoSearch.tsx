@@ -121,9 +121,9 @@ export function PhotoSearch({ products, onAddProduct, attributes = furnitureAttr
     {status.kind === 'done' && (matches.length === 0 ? <p className="photo-no-matches">No similar products in this catalog for “{status.analysis.category}”. Try a different manual category.</p> : <ul className="photo-match-list" aria-label="Photo search matches">{matches.map(({ product, reasons }) => {
       const retailer = getRetailerLink(product.retailerUrl);
       return <li key={product.id}>
-        <div className="photo-match-top"><div className="photo-match-image"><ProductImage product={product} /></div><div><h5>{product.title}</h5><p>{product.category} · {retailer ? `${retailer.name} link` : 'Sample product'}</p></div></div>
+        <div className="photo-match-top"><div className="photo-match-image"><ProductImage product={product} /></div><div><h5>{product.title}</h5><p>{product.category} · {retailer ? `${retailer.name} link` : 'Product'}</p></div></div>
         <p className="photo-match-size">{product.widthM.toFixed(2)} × {product.depthM.toFixed(2)} × {product.heightM.toFixed(2)} m · W × D × H</p>
-        <p className="photo-match-price">{product.priceUSD === null ? 'Price unavailable' : formatPrice(product.priceUSD)}<span> · {retailer ? 'imported' : 'sample'} price</span></p>
+        <p className="photo-match-price">{product.priceUSD === null ? 'Price unavailable' : formatPrice(product.priceUSD)}<span> · {retailer ? 'imported' : 'snapshot'} price</span></p>
         <ul className="photo-match-reasons">{reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>
         <button className="catalog-add-button" type="button" aria-label={`Add photo match ${product.title} to your room`} onClick={() => onAddProduct(product.id)}><Plus size={13} /> Add to Room</button>
         {retailer && <a className="retailer-link" href={retailer.href} target="_blank" rel="noopener noreferrer" aria-label={`View photo match ${product.title} at ${retailer.name} (opens in a new tab)`}>View at {retailer.name} <ArrowUpRight size={12} /></a>}
