@@ -92,6 +92,8 @@ Vite setup follows the [Vite guide](https://vite.dev/guide/), with the [Tailwind
 
 ## Verification
 
+See [perspective floor calibration](docs/FLOOR_CALIBRATION.md) for Align Floor controls, the shared homography/coordinate contract, fallback behavior, and unchanged room-analysis feature gates.
+
 See [latest teammate integration notes](docs/LATEST_INTEGRATION.md) for the imported source commits, product appearances, automatic placement, production AI smoke test and review/deployment limits.
 
 Run `npm test` and `npm run build`. The 133 tests cover the catalog, unit conversion, coordinate round trips, all quarter-turn orientations, snapping/clamping, wall/height/overlap rules, exact geometry for all 21 products, shared-state callbacks, automatic placement (including narrow gaps, rotated obstacles and full-room fallback), pricing, Shreya's 23 matching regressions, request/image validation, rate limits, provider errors, manual fallback, and upload-to-placement integration. App DOM tests replace only the WebGL canvas; mesh tests inspect actual R3F geometry without a GPU. OpenAI transport is mocked in automated tests. Use the opt-in `npm run test:vision` against a configured server for real chair/sofa analysis.

@@ -250,6 +250,16 @@ h2 { font-family: var(--font-serif); font-size: clamp(30px, 3vw, 41px); font-wei
 .scene-tools button:hover, .scene-selection button:hover { background: #dce5d0; }
 .scene-viewport { height: 390px; position: relative; overflow: hidden; background: radial-gradient(ellipse at 50% 70%, #f0f3e9, #e4ead9); }
 .scene-renderer { position: absolute; inset: 0; width: 100%; height: 100%; }
+.floor-calibrator { padding: 16px 24px; border-bottom: 1px solid #dbe2d0; font-size: 12px; line-height: 1.6; color: #53664b; }
+.floor-calibrator h4 { font-family: Georgia, serif; font-size: 22px; }
+.floor-calibrator p { margin: 10px 0; }
+.floor-calibration-image { position: relative; width: min(100%, 640px); margin: 20px auto; }
+.floor-calibration-image img { width: 100%; display: block; border-radius: 6px; user-select: none; }
+.floor-calibration-image svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.floor-corner { position: absolute; transform: translate(-50%,-50%); width: 36px; height: 36px; border-radius: 50%; background: #344f37; color: white; border: 3px solid #fff; box-shadow: 0 1px 6px #0008; font-weight: 700; cursor: grab; touch-action: none; }
+.floor-corner:active { cursor: grabbing; }
+.floor-corner:focus-visible { outline: 3px solid #e6b75a; outline-offset: 3px; }
+.floor-calibrator [role="alert"] { color: #a64937; }
 .room-analysis-panel { padding: 0 18px 16px; font-size: 12px; line-height: 1.6; color: #53664b; border-bottom: 1px solid #dbe2d0; }
 .room-analysis-panel p { margin: 8px 0; }
 .room-analysis-panel [role="alert"] { color: #a64937; }

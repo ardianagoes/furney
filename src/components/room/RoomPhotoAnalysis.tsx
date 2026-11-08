@@ -26,7 +26,7 @@ export function RoomPhotoAnalysis({photo,analysis,areas,room,onAnalysis,onAlign,
       <p role="status">{analysis.furniture.length} existing furniture detections · {areas.length} estimated occupied areas</p>
       <p>{analysis.notes}</p>
       <ul>{analysis.furniture.map((o,i)=><li key={i}>{o.label} · {Math.round(o.confidence*100)}% confidence{!areas.some(a=>a.id===String(i))?' · no active area (uncertain, unresolved, or removed)':''}</li>)}</ul>
-      <div className="scene-tools"><button type="button" onClick={onAlign}>Reapply estimated alignment</button><button type="button" onClick={()=>{cancel();onClear();}}>Clear detections</button></div>
+      <div className="scene-tools"><button type="button" onClick={onAlign}>Review floor alignment</button><button type="button" onClick={()=>{cancel();onClear();}}>Clear detections</button></div>
       {areas.map(a=><fieldset key={a.id}><legend>{a.label} · approximate floor area</legend>
         <div className="room-area-fields">{(['x','z','w','d'] as const).map(key=><label key={key}>{({x:'X',z:'Z',w:'Width',d:'Depth'})[key]} (m)<input type="number" step="0.05" min={key==='w'||key==='d'?0.1:0} max={key==='x'||key==='w'?room.widthM:room.depthM} aria-label={a.label+' area '+key+' in meters'} value={Number((a[key]+(key==='x'?room.widthM/2:key==='z'?room.depthM/2:0)).toFixed(3))} onChange={e=>{
           const v=e.target.valueAsNumber;if(!Number.isFinite(v)||v<0||((key==='w'||key==='d')&&v<0.1))return;

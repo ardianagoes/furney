@@ -1,0 +1,73 @@
+// @vitest-environment jsdom
+import {afterEach,it,expect,vi} from 'vitest';
+import {cleanup,fireEvent,render,screen,waitFor,within} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import App from '../App';
+import {analyzeRoom} from '../lib/room-photo.client';
+import {DEFAULT_FLOOR_CORNERS,transformPoint,createFloorCalibration} from '../lib/floorCalibration';
+import {furnitureProducts} from '../data/furnitureProducts';
+vi.mock('./room/RoomScene',()=>import('../test/MockRoomScene'));
+vi.mock('../lib/room-photo.client',()=>({analyzeRoom:vi.fn()}));
+afterEach(()=>{cleanup();vi.restoreAllMocks();vi.unstubAllGlobals();vi.unstubAllEnvs();});
+function upload(){
+  vi.stubGlobal('URL',class extends URL{static createObjectURL=()=> 'blob:room';static revokeObjectURL=vi.fn();});
+  fireEvent.change(screen.getByLabelText('Upload room photo'),{target:{files:[new File(['room'],'room.jpg',{type:'image/jpeg'})]}});
+}
+const current=()=>JSON.parse(screen.getByTestId('floor-photo').getAttribute('data-calibration')!);
+it('keeps manual calibration independent of viewport size, preserves placed furniture on room resize, and allows fallback',async()=>{
+  const user=userEvent.setup();render(<App/>);
+  const product=furnitureProducts[0];
+  await user.click(screen.getByRole('button',{name:'Add '+product.title+' to your room'}));
+  await screen.findByTestId('floor-photo');upload();
+  expect(current()).toBeNull();expect(screen.getByRole('region',{name:'Align floor corners'})).toBeTruthy();
+  await user.click(screen.getByRole('button',{name:'Apply floor alignment'}));
+  expect(current().corners).toEqual(DEFAULT_FLOOR_CORNERS);
+  await user.click(screen.getByRole('button',{name:'Drag scene piece '+product.title}));
+  await user.click(screen.getByRole('button',{name:'Rotate selected furniture 90 degrees'}));
+  const mesh=screen.getByRole('button',{name:'Select scene piece '+product.title}).parentElement!;
+  expect(JSON.parse(mesh.querySelector('span')!.textContent!).rot).toBe(90);
+  expect((screen.getByRole('spinbutton',{name:'Selected piece X in meters'}) as HTMLInputElement).valueAsNumber).toBeCloseTo(1.0788);
+  expect(screen.getByText(product.widthM.toFixed(2)+' × '+product.depthM.toFixed(2)+' × '+product.heightM.toFixed(2)+' m · W × D × H')).toBeTruthy();
+  expect(within(screen.getByRole('region',{name:/Your room, piece by piece/})).getAllByText('$1,299')).toHaveLength(2);
+  const before=current();
+  fireEvent(window,new Event('resize'));
+  expect(current()).toEqual(before);
+  fireEvent.change(screen.getByRole('spinbutton',{name:'Room width in feet'}),{target:{value:'18'}});
+  await user.click(screen.getByRole('button',{name:'Apply dimensions'}));
+  expect(current()).toEqual(before);
+  expect(JSON.parse(screen.getByTestId('floor-photo').getAttribute('data-room')!).width).toBeCloseTo(5.4864);
+  expect(screen.getByRole('button',{name:'Select scene piece '+product.title})).toBeTruthy();
+  await user.click(screen.getByRole('button',{name:'Top-down view'}));expect(current()).toEqual(before);
+  await user.click(screen.getByRole('button',{name:'Use cropped fallback'}));expect(current()).toBeNull();
+  await user.click(screen.getByRole('button',{name:'Remove photo'}));
+  expect(screen.queryByRole('region',{name:'Align floor corners'})).toBeNull();
+});
+it('uses a reliable AI quad and the same inverse transform for detections, while retaining manually confirmed corners',async()=>{
+  vi.stubEnv('VITE_ENABLE_ROOM_ANALYSIS','true');
+  const corners=DEFAULT_FLOOR_CORNERS,c=createFloorCalibration(corners)!;
+  const floor={backLeft:corners[0],backRight:corners[1],frontRight:corners[2],frontLeft:corners[3],confidence:0.9};
+  vi.mocked(analyzeRoom).mockResolvedValue({ok:true,analysis:{view:'perspective',floor,rearEdge:null,notes:'Approximate',furniture:[{label:'Existing chair',confidence:0.9,footprint:[{x:0.4,y:0.4},{x:0.6,y:0.4},{x:0.6,y:0.6},{x:0.4,y:0.6}].map(p=>transformPoint(c.toImage,p)!)}]}});
+  const user=userEvent.setup();render(<App/>);await screen.findByTestId('floor-photo');upload();
+  await user.click(screen.getByRole('button',{name:'Analyze Room'}));
+  await waitFor(()=>expect(current()?.corners).toEqual(corners));
+  const x=await screen.findByLabelText('Existing chair area x in meters');
+  expect((x as HTMLInputElement).valueAsNumber).toBeCloseTo(1.829,3);
+  await user.click(screen.getByRole('button',{name:'Apply floor alignment'}));
+  const manual=current();
+  vi.mocked(analyzeRoom).mockResolvedValue({ok:true,analysis:{view:'overhead',floor:null,rearEdge:null,notes:'No full floor visible.',furniture:[]}});
+  await user.click(screen.getByRole('button',{name:'Analyze Room'}));
+  await waitFor(()=>expect(vi.mocked(analyzeRoom)).toHaveBeenCalledTimes(2));
+  expect(current()).toEqual(manual);
+  const selected=screen.getByRole('region',{name:/Your room, piece by piece/});
+  expect(within(selected).getByText('$0')).toBeTruthy();
+});
+it('requires manual calibration for missing AI floor corners rather than accepting overhead orientation as scale',async()=>{
+  vi.stubEnv('VITE_ENABLE_ROOM_ANALYSIS','true');
+  vi.mocked(analyzeRoom).mockResolvedValue({ok:true,analysis:{view:'overhead',floor:null,rearEdge:null,notes:'Corners not visible',furniture:[]}});
+  const user=userEvent.setup();render(<App/>);await screen.findByTestId('floor-photo');upload();
+  await user.click(screen.getByRole('button',{name:'Analyze Room'}));
+  await screen.findByText('Corners not visible');
+  expect(current()).toBeNull();
+  expect(screen.getByRole('region',{name:'Align floor corners'})).toBeTruthy();
+  expect(screen.getByText(/Floor is NOT calibrated/)).toBeTruthy();
+});

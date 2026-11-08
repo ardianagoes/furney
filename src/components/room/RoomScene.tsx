@@ -11,6 +11,7 @@ import type {CameraStore} from '../../lib/cameraControls';
 import {applyCameraPose} from '../../lib/cameraPose';
 import {bindWheelZoom} from '../../lib/cameraZoom';
 import {RoomFloor} from './RoomFloor';
+import type {FloorCalibration} from '../../lib/floorCalibration';
 
 export interface CameraRig {
   height: number;
@@ -21,6 +22,7 @@ export interface CameraRig {
 }
 
 export interface RoomSceneProps {
+  floorCalibration?:FloorCalibration|null;
   cameraStore?: CameraStore;
   alignment: {x:number;y:number};
   occupied: readonly OccupiedArea[];
@@ -100,7 +102,7 @@ export function SceneFurniture({ item, problems, selected, onSelect, onMove }: {
   </group>;
 }
 
-export function RoomScene({ room, items, selectedId, showGrid, photo, onPhotoLoad,onPhotoError, rig, cameraStore,alignment,occupied, onSelect, onMove }: RoomSceneProps) {
+export function RoomScene({ room, items, selectedId, showGrid, photo, onPhotoLoad,onPhotoError, floorCalibration,rig, cameraStore,alignment,occupied, onSelect, onMove }: RoomSceneProps) {
   const problems = useMemo(() => Object.fromEntries(items.map(item => [item.id, [...itemProblems(item, items, room),...(occupiedBy(item,occupied)?['Overlaps detected existing furniture']:[])]])), [items, room,occupied]);
   const hw = room.width / 2, hd = room.depth / 2;
   const extent = Math.max(room.width, room.depth, room.height);
@@ -120,7 +122,7 @@ export function RoomScene({ room, items, selectedId, showGrid, photo, onPhotoLoa
       <Lightformer intensity={2} position={[0, extent + 2, 0]} scale={[10, 10, 1]} rotation-x={Math.PI / 2} />
       <Lightformer intensity={1} color="#ffe2c4" position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[20, 2, 1]} />
     </Environment>
-    <RoomFloor width={room.width} depth={room.depth} photo={photo} onPhotoLoad={onPhotoLoad} onPhotoError={onPhotoError}/>
+    <RoomFloor width={room.width} depth={room.depth} photo={photo} onPhotoLoad={onPhotoLoad} onPhotoError={onPhotoError} calibration={floorCalibration}/>
     {showGrid && <>
       <Grid args={[room.width, room.depth]} cellSize={0.5} cellThickness={0.6} sectionSize={1} sectionThickness={1.2}
         cellColor={photo ? '#ffffff' : '#a9b49b'} sectionColor="#879b70" fadeDistance={extent * 4} position={[0, 0.002, 0]} />
