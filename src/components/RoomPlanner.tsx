@@ -4,32 +4,38 @@ import type { RoomPlannerProps } from '../types';
 import { formatFeetInches } from '../lib/units';
 import { itemProblems } from '../lib/room';
 import { placementFromDrag, rotatePlacement, toSceneItem, toSceneRoom } from '../lib/plannerAdapter';
-import {createCameraStore,defaultRig,topDownRig,type CameraRig} from '../lib/cameraControls';
+import {createCameraStore,defaultRig,topDownRig} from '../lib/cameraControls';
 import {CameraControls} from './CameraControls';
 import { SceneBoundary } from './room/SceneBoundary';
 import { RoomPhotoAnalysis } from './room/RoomPhotoAnalysis';
 import { occupiedBy } from '../lib/occupiedAreas';
 import type { RoomAnalysis, OccupiedArea } from '../lib/room-photo-types';
+import {FloorCalibrator} from './room/FloorCalibrator';
+import {calibratedFloorAreas,createFloorCalibration,suggestedFloorCorners,type FloorCorners} from '../lib/floorCalibration';
+import {floorPhotoAreas} from '../lib/floorPhotoMapping';
 
 // Keep the renderer out of the initial landing-page bundle.
 const RoomScene = lazy(() => import('./room/RoomScene').then(module => ({ default: module.RoomScene })));
 
 
 /** Angelo's renderer, driven exclusively by Furney's RoomPlannerProps.
- * Only selection, camera, grid, and a local photo are UI state here. */
+ * Selection, camera, grid, and normalized photo calibration are local UI state. */
 export function RoomPlanner({ room, products, placedItems, onItemChange, onItemRemove, occupiedAreas = [], onOccupiedAreasChange = () => {} }: RoomPlannerProps & {occupiedAreas?:readonly OccupiedArea[];onOccupiedAreasChange?:(areas:OccupiedArea[])=>void}) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showGrid, setShowGrid] = useState(true);
   const [cameraStore] = useState(() => createCameraStore(defaultRig(room)));
-  const setRig = (next:CameraRig) => cameraStore.set(next);
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState('');
   const [analysis,setAnalysis]=useState<RoomAnalysis|null>(null);
+  const [floorCorners,setFloorCorners]=useState<FloorCorners|null>(null);
+  const [aligningFloor,setAligningFloor]=useState(false);
+  const manualCalibration=useRef(false);
+  const calibration=useMemo(()=>floorCorners?createFloorCalibration(floorCorners):null,[floorCorners]);
+  const areasCallback=useRef(onOccupiedAreasChange);areasCallback.current=onOccupiedAreasChange;
   const [alignment,setAlignment]=useState({x:0,y:0});
   const [frame,setFrame]=useState({width:1,height:1,imageWidth:1,imageHeight:1});
   const [analysisNotice,setAnalysisNotice]=useState('');
   const viewport=useRef<HTMLDivElement>(null);
-  const photoVersion=useRef(0);
   const previousIds = useRef(new Set(placedItems.map(item => item.instanceId)));
   const photoInput = useRef<HTMLInputElement>(null);
   const photoLoaded=useCallback((width:number,height:number)=>setFrame(f=>({...f,imageWidth:width,imageHeight:height})),[]);
@@ -49,29 +55,25 @@ export function RoomPlanner({ room, products, placedItems, onItemChange, onItemR
     if (added) setSelectedId(added.instanceId);
     previousIds.current = new Set(placedItems.map(item => item.instanceId));
   }, [placedItems]);
-  useEffect(() => { cameraStore.set(defaultRig(room),'angled');setAlignment({x:0,y:0});setAnalysis(null);setAnalysisNotice('');photoVersion.current++; }, [room]);
+  useEffect(() => { cameraStore.set(defaultRig(room),'angled');setAlignment({x:0,y:0}); }, [room]);
   useEffect(()=>{
     if(!viewport.current||typeof ResizeObserver==='undefined')return;
     const observer=new ResizeObserver(([entry])=>{if(entry)setFrame(f=>({...f,width:Math.max(1,entry.contentRect.width),height:Math.max(1,entry.contentRect.height)}));});
     observer.observe(viewport.current);return()=>observer.disconnect();
   },[]);
   useEffect(() => () => { if (photo) URL.revokeObjectURL(photo); }, [photo]);
-  useEffect(()=>()=>{photoVersion.current++;},[]);
   useEffect(()=>{if(cameraStore.getMode()==='top')cameraStore.set(topDownRig(room,frame.width/frame.height),'top');},[cameraStore,room,frame.width,frame.height]);
-  function clearAnalysis(){photoVersion.current++;setAnalysis(null);setAnalysisNotice('');onOccupiedAreasChange([]);}
+  useEffect(()=>{
+    if(!analysis)return;
+    const projected=calibration?calibratedFloorAreas(analysis,calibration,room.widthM,room.depthM):floorPhotoAreas(analysis,frame.imageWidth,frame.imageHeight,room.widthM,room.depthM);
+    areasCallback.current(projected.areas);
+    setAnalysisNotice((calibration?'Detections use the calibrated floor coordinates. ':'Floor is NOT calibrated; detections use the approximate cropped-reference fallback. Use Align Floor. ')+projected.unresolved+' detections need review. Editing calibration or room dimensions recalculates estimated areas.');
+  },[analysis,calibration,room.widthM,room.depthM,room.heightM,frame.imageWidth,frame.imageHeight]);
+  function clearAnalysis(){setAnalysis(null);setAnalysisNotice('');onOccupiedAreasChange([]);}
   async function applyAnalysis(result:RoomAnalysis){
-    const version=photoVersion.current;
-    const [{calibrateFloor},{floorPhotoAreas}]=await Promise.all([import('../lib/room-photo'),import('../lib/floorPhotoMapping')]);
-    if(version!==photoVersion.current)return;
-    const rig=cameraStore.getSnapshot();
-    const suggestion=calibrateFloor(result,sceneRoom,frame,rig);
-    const camera=suggestion?.rig??rig, offset=suggestion?.alignment??alignment;
-    if(suggestion){setRig(camera);setAlignment(offset);setShowGrid(true);}
-    const projected=floorPhotoAreas(result,frame.imageWidth,frame.imageHeight,room.widthM,room.depthM);
-    // Reject huge/off-room projections instead of presenting them as measured.
-    const areas=projected.areas.filter(a=>a.w<=room.widthM*2&&a.d<=room.depthM*2&&Math.abs(a.x)<=room.widthM&&Math.abs(a.z)<=room.depthM);
-    setAnalysis(result);onOccupiedAreasChange(areas);
-    setAnalysisNotice((suggestion?'Approximate alignment applied. ':'Could not estimate alignment reliably; manual camera retained. ')+(result.furniture.length-areas.length)+' detections need manual review. Camera edits do not move accepted areas; edit their meter values or reapply alignment.');
+    const suggestion=suggestedFloorCorners(result);
+    if(!manualCalibration.current){setFloorCorners(suggestion);setAligningFloor(true);}
+    setAnalysis(result);setShowGrid(true);
   }
 
   function uploadPhoto(event: ChangeEvent<HTMLInputElement>) {
@@ -82,7 +84,7 @@ export function RoomPlanner({ room, products, placedItems, onItemChange, onItemR
       setPhotoError('Choose a JPG, PNG, or WebP image up to 8 MB.');
       return;
     }
-    clearAnalysis();setAlignment({x:0,y:0});setShowGrid(true);setPhoto(URL.createObjectURL(file));
+    clearAnalysis();manualCalibration.current=false;setFloorCorners(null);setAligningFloor(true);setAlignment({x:0,y:0});setShowGrid(true);setPhoto(URL.createObjectURL(file));
     setPhotoError('');
   }
 
@@ -99,17 +101,21 @@ export function RoomPlanner({ room, products, placedItems, onItemChange, onItemR
       <button type="button" aria-pressed={showGrid} onClick={() => setShowGrid(value => !value)}><Grid3X3 size={14} /> {showGrid ? 'Hide' : 'Show'} grid</button>
       <button type="button" onClick={() => photoInput.current?.click()}><ImagePlus size={14} /> Room photo</button>
       <input ref={photoInput} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Upload room photo" onChange={uploadPhoto} />
-      {photo && <button type="button" onClick={() => { clearAnalysis();setPhoto(null);setAlignment({x:0,y:0}); setPhotoError(''); }}><X size={13} /> Remove photo</button>}
+      {photo && <button type="button" onClick={() => { clearAnalysis();setFloorCorners(null);setAligningFloor(false);manualCalibration.current=false;setPhoto(null);setAlignment({x:0,y:0}); setPhotoError(''); }}><X size={13} /> Remove photo</button>}
+      {photo&&<button type="button" aria-pressed={aligningFloor} onClick={()=>setAligningFloor(value=>!value)}>Align Floor</button>}
       <button type="button" onClick={() => {cameraStore.set(defaultRig(room),'angled');setAlignment({x:0,y:0});}}><RotateCcw size={14} /> Reset view</button>
       <button type="button" onClick={()=>{cameraStore.set(topDownRig(room,frame.width/frame.height),'top');setAlignment({x:0,y:0});}}>Top-down view</button>
     </div>
     {photoError && <p role="alert" className="scene-notice scene-error">{photoError}</p>}
-    {photo && <p className="scene-notice">Your photo is a floor reference, center-cropped to fit without stretching. It does not map furniture or walls to accurate geometry. Align the camera manually; your measured room dimensions still control fit.</p>}
-    {photo&&import.meta.env.VITE_ENABLE_ROOM_ANALYSIS==='true'&&<RoomPhotoAnalysis photo={photo} analysis={analysis} areas={occupiedAreas} room={room} onAnalysis={applyAnalysis} onAlign={()=>{if(analysis)void applyAnalysis(analysis);}} onClear={clearAnalysis} onAreasChange={onOccupiedAreasChange}/>}
+    {photo && <p className="scene-notice">{calibration?'Perspective floor calibration active.':'Floor is not calibrated: using the center-cropped reference fallback. Choose Align Floor to mark four visible floor corners.'} Your measured room dimensions establish scale; a single photograph cannot provide exact dimensions or reconstruct walls/furniture heights. Align the camera manually to choose your view.</p>}
+    {photo&&aligningFloor&&<FloorCalibrator key={photo+JSON.stringify(floorCorners)} photo={photo} corners={floorCorners} width={room.widthM} depth={room.depthM} onApply={corners=>{manualCalibration.current=true;setFloorCorners(corners);setAligningFloor(false);setShowGrid(true);}} onCancel={()=>setAligningFloor(false)}/>}
+    {photo&&calibration&&<div className="scene-tools"><button type="button" onClick={()=>{manualCalibration.current=true;setFloorCorners(null);setAligningFloor(false);}}>Use cropped fallback</button></div>}
+    {photo&&analysis&&suggestedFloorCorners(analysis)&&<div className="scene-tools"><button type="button" onClick={()=>{manualCalibration.current=false;setFloorCorners(suggestedFloorCorners(analysis));setAligningFloor(true);}}>Review AI floor suggestion</button></div>}
+    {photo&&import.meta.env.VITE_ENABLE_ROOM_ANALYSIS==='true'&&<RoomPhotoAnalysis photo={photo} analysis={analysis} areas={occupiedAreas} room={room} onAnalysis={applyAnalysis} onAlign={()=>setAligningFloor(true)} onClear={clearAnalysis} onAreasChange={onOccupiedAreasChange}/>}
     {analysisNotice&&<p role="status" className="scene-notice">{analysisNotice}</p>}
     <div className="scene-viewport" ref={viewport}>
       <div className="scene-renderer"><SceneBoundary><Suspense fallback={<div className="scene-loading" role="status">Loading your 3D room…</div>}>
-        <RoomScene room={sceneRoom} items={sceneItems} selectedId={selected?.instanceId ?? null} showGrid={showGrid} photo={photo} onPhotoLoad={photoLoaded} onPhotoError={photoFailed} rig={cameraStore.getSnapshot()} cameraStore={cameraStore} alignment={alignment} occupied={occupiedAreas} onSelect={setSelectedId} onMove={move} />
+        <RoomScene room={sceneRoom} items={sceneItems} selectedId={selected?.instanceId ?? null} showGrid={showGrid} photo={photo} onPhotoLoad={photoLoaded} onPhotoError={photoFailed} floorCalibration={calibration} rig={cameraStore.getSnapshot()} cameraStore={cameraStore} alignment={alignment} occupied={occupiedAreas} onSelect={setSelectedId} onMove={move} />
       </Suspense></SceneBoundary></div>
       <div className={`scene-fit-badge ${issues.length > 0 ? 'has-issues' : ''}`} role="status">
         {issues.length > 0 ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}

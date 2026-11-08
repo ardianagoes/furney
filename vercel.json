@@ -6,7 +6,8 @@
       "codex/final-ikea-room-analysis": false,
       "codex/smooth-top-down-camera": false,
       "codex/canvas-wheel-zoom": false,
-      "codex/room-floor-photo": false
+      "codex/room-floor-photo": false,
+      "codex/perspective-floor-calibration": false
     }
   }
 }
