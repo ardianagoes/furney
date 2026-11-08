@@ -4,7 +4,8 @@
     "deploymentEnabled": {
       "codex/integrate-latest-teammate-improvements": false,
       "codex/final-ikea-room-analysis": false,
-      "codex/smooth-top-down-camera": false
+      "codex/smooth-top-down-camera": false,
+      "codex/canvas-wheel-zoom": false
     }
   }
 }

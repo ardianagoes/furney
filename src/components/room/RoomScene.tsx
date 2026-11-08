@@ -1,7 +1,7 @@
 // Adapted from Angelo's RoomScene @ f541bc9f521201cccc1e0b15aaa58abc3bb5c284.
 import { Canvas, useThree, useFrame, type ThreeEvent } from '@react-three/fiber';
 import { Environment, Grid, Lightformer, Line } from '@react-three/drei';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { itemProblems, footprint, type SceneItem, type Room } from '../../lib/room';
 import { FurnitureMesh } from './Furniture';
@@ -9,6 +9,7 @@ import type { OccupiedArea } from '../../lib/room-photo-types';
 import { occupiedBy } from '../../lib/occupiedAreas';
 import type {CameraStore} from '../../lib/cameraControls';
 import {applyCameraPose} from '../../lib/cameraPose';
+import {bindWheelZoom} from '../../lib/cameraZoom';
 
 export interface CameraRig {
   height: number;
@@ -32,8 +33,12 @@ export interface RoomSceneProps {
   onMove: (id: string, x: number, z: number) => void;
 }
 
-function Rig({ rig,alignment,store }: { rig: CameraRig;alignment:{x:number;y:number};store?:CameraStore }) {
-  const { camera,size } = useThree();
+function Rig({ rig,alignment,store,room }: { rig: CameraRig;alignment:{x:number;y:number};store?:CameraStore;room:Room }) {
+  const { camera,size,gl } = useThree();
+  useEffect(()=>{
+    if(!store)return;
+    return bindWheelZoom(gl.domElement,store,{widthM:room.width,depthM:room.depth,heightM:room.height});
+  },[gl,store,room.width,room.depth,room.height]);
   const previous=useRef<{pose:CameraRig;width:number;height:number;x:number;y:number}|null>(null);
   // R3F runs this on requestAnimationFrame, reading the newest input directly.
   // No debounce, interpolation tail, scene re-render or redundant projection work.
@@ -104,7 +109,7 @@ export function RoomScene({ room, items, selectedId, showGrid, photoMode, rig, c
     fallback={<div className="scene-unavailable">3D needs WebGL2. Your furniture list and placement controls still work.</div>}
     aria-label="Interactive room canvas"
   >
-    <Rig rig={rig} alignment={alignment} store={cameraStore} />
+    <Rig rig={rig} alignment={alignment} store={cameraStore} room={room} />
     <ambientLight intensity={0.7} />
     <directionalLight position={[extent, extent * 2, extent]} intensity={1.6} castShadow shadow-mapSize={[1024, 1024]}
       shadow-camera-left={-extent} shadow-camera-right={extent} shadow-camera-top={extent} shadow-camera-bottom={-extent} shadow-camera-far={extent * 5} />
