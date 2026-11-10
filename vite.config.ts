@@ -9,9 +9,9 @@ export default defineConfig(({ mode }) => ({
     name: 'furney-photo-search-dev-api',
     configureServer(server) {
       // Server-side env only. No define/import.meta.env injection or VITE_ key.
-      const fileEnv = loadEnv(mode, process.cwd(), 'OPENAI_');
-      const handler = createPhotoHandler({ env: { ...fileEnv, ...process.env } });
-      const roomHandler = createPhotoHandler({ env: { ...fileEnv, ...process.env }, analyze: analyzeRoomPhoto });
+      const fileEnv = {...loadEnv(mode, process.cwd(), 'OPENAI_'),...loadEnv(mode,process.cwd(),'ENABLE_')};
+      const handler = createPhotoHandler({ env: { ...fileEnv, ...process.env },localDevelopment:true });
+      const roomHandler = createPhotoHandler({ env: { ...fileEnv, ...process.env },localDevelopment:true, analyze: analyzeRoomPhoto });
       server.middlewares.use('/api/room-photo', (request, response) => {
         if(process.env.ENABLE_ROOM_ANALYSIS!=='true'&&loadEnv(mode,process.cwd(),'ENABLE_').ENABLE_ROOM_ANALYSIS!=='true'){
           response.statusCode=503;response.setHeader('Content-Type','application/json');response.setHeader('Cache-Control','no-store');

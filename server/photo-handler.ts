@@ -1,91 +1,76 @@
-import { createHash } from 'node:crypto';
-import type { IncomingMessage, ServerResponse } from 'node:http';
-import { MAX_IMAGE_BYTES, ACCEPTED_IMAGE_TYPES, type PhotoAnalysisResult } from '../src/lib/photo-search-types.js';
-import { analyzeFurniturePhoto } from './photo-analysis.server.js';
-import type { RoomAnalysisResult } from '../src/lib/room-photo-types.js';
+import type {IncomingMessage,ServerResponse} from 'node:http';
+import {MAX_IMAGE_BYTES,type PhotoAnalysisResult} from '../src/lib/photo-search-types.js';
+import {analyzeFurniturePhoto} from './photo-analysis.server.js';
+import type {RoomAnalysisResult} from '../src/lib/room-photo-types.js';
+import {validateImage} from './image-validation.js';
+import {permitsLocalPaidAI,PAID_AI_DISABLED_MESSAGE} from './paid-ai-policy.js';
+export {validateImage} from './image-validation.js';
+const MAX_JSON_BYTES=Math.ceil(MAX_IMAGE_BYTES/3)*4+512;
+export const BODY_TIMEOUT_MS=5000;
+class BodyTimeout extends Error{}
 
-const MAX_JSON_BYTES = Math.ceil(MAX_IMAGE_BYTES / 3) * 4 + 512;
-const WINDOW_MS = 60_000;
-
-export function validateImage(dataUrl: unknown): dataUrl is string {
-  if (typeof dataUrl !== 'string' || dataUrl.length > MAX_JSON_BYTES) return false;
-  const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+={0,2})$/.exec(dataUrl);
-  if (!match || !(ACCEPTED_IMAGE_TYPES as readonly string[]).includes(match[1]) || match[2].length % 4 !== 0) return false;
-  const bytes = Buffer.from(match[2], 'base64');
-  if (bytes.length === 0 || bytes.length > MAX_IMAGE_BYTES || bytes.toString('base64') !== match[2]) return false;
-  if (match[1] === 'image/png') return bytes.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'));
-  if (match[1] === 'image/jpeg') return bytes.subarray(0, 3).equals(Buffer.from('ffd8ff', 'hex'));
-  return bytes.length >= 12 && bytes.subarray(0, 4).toString() === 'RIFF' && bytes.subarray(8, 12).toString() === 'WEBP';
+/** Loopback development burst protection only; NOT a serverless spend guard. */
+export function createRateLimiter(now=Date.now){
+  let count=0,expires=0;
+  return (_address:string)=>{const time=now();if(time>=expires){count=0;expires=time+60_000;}return ++count<=5;};
 }
 
-/** Bounded warm-instance rate limiter. No images or raw IP addresses stored.
- * Serverless instances do not share this state; add deployment-level limits for
- * a strict global production quota. */
-export function createRateLimiter(now = Date.now) {
-  const buckets = new Map<string, { count: number; expires: number }>();
-  let global = { count: 0, expires: 0 };
-  return (address: string) => {
-    const time = now();
-    for (const [key, value] of buckets) if (value.expires <= time) buckets.delete(key);
-    if (global.expires <= time) global = { count: 0, expires: time + WINDOW_MS };
-    const key = createHash('sha256').update(address).digest('hex');
-    const bucket = buckets.get(key) ?? { count: 0, expires: time + WINDOW_MS };
-    if (global.count >= 20 || bucket.count >= 5 || (!buckets.has(key) && buckets.size >= 1000)) return false;
-    bucket.count++; global.count++; buckets.set(key, bucket);
-    return true;
-  };
-}
-
-async function readBody(request: IncomingMessage & { body?: unknown }): Promise<unknown> {
-  if (Number(request.headers['content-length']) > MAX_JSON_BYTES) throw new RangeError('Request too large');
-  if (request.body !== undefined) {
-    const raw = Buffer.isBuffer(request.body) ? request.body.toString('utf8') : typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
-    if (Buffer.byteLength(raw) > MAX_JSON_BYTES) throw new RangeError('Request too large');
+async function readBody(request:IncomingMessage&{body?:unknown}):Promise<unknown>{
+  if(Number(request.headers['content-length'])>MAX_JSON_BYTES)throw new RangeError();
+  if(request.body!==undefined){
+    const raw=Buffer.isBuffer(request.body)?request.body.toString('utf8'):typeof request.body==='string'?request.body:JSON.stringify(request.body);
+    if(Buffer.byteLength(raw)>MAX_JSON_BYTES)throw new RangeError();
     return JSON.parse(raw);
   }
-  const chunks: Buffer[] = [];
-  let size = 0;
-  for await (const chunk of request.iterator({ destroyOnReturn: false })) {
-    const data = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
-    size += data.length;
-    if (size > MAX_JSON_BYTES) { request.resume(); throw new RangeError('Request too large'); }
-    chunks.push(data);
-  }
-  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  return new Promise((resolve,reject)=>{
+    const chunks:Buffer[]=[];let size=0;
+    const cleanup=()=>{clearTimeout(timer);request.off('data',data);request.off('end',end);request.off('error',fail);request.off('aborted',abort);};
+    const fail=(error:Error)=>{cleanup();request.pause();reject(error);};
+    const abort=()=>fail(new Error('Upload aborted'));
+    const data=(chunk:Buffer|string)=>{const b=Buffer.isBuffer(chunk)?chunk:Buffer.from(chunk);size+=b.length;if(size>MAX_JSON_BYTES)fail(new RangeError());else chunks.push(b);};
+    const end=()=>{cleanup();try{resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')));}catch{reject(new Error('Invalid JSON'));}};
+    const timer=setTimeout(()=>fail(new BodyTimeout()),BODY_TIMEOUT_MS);
+    request.on('data',data);request.once('end',end);request.once('error',fail);request.once('aborted',abort);
+  });
 }
 
-export function createPhotoHandler(options: { env?: NodeJS.ProcessEnv; fetchImpl?: typeof fetch; allowRequest?: (address: string) => boolean; analyze?: (dataUrl: string, options: {apiKey:string;model?:string;fetchImpl?:typeof fetch}) => Promise<PhotoAnalysisResult | RoomAnalysisResult> } = {}) {
-  const allowRequest = options.allowRequest ?? createRateLimiter();
-  return async (request: IncomingMessage & { body?: unknown }, response: ServerResponse) => {
-    const send = (status: number, result: PhotoAnalysisResult | RoomAnalysisResult) => {
-      response.statusCode = status;
-      response.setHeader('Content-Type', 'application/json; charset=utf-8');
-      response.setHeader('Cache-Control', 'no-store');
-      response.setHeader('X-Content-Type-Options', 'nosniff');
-      response.end(JSON.stringify(result));
+type ProviderOptions={apiKey:string;model?:string;fetchImpl?:typeof fetch;signal?:AbortSignal};
+export function createPhotoHandler(options:{env?:NodeJS.ProcessEnv;localDevelopment?:boolean;fetchImpl?:typeof fetch;allowRequest?:(address:string)=>boolean;analyze?:(dataUrl:string,options:ProviderOptions)=>Promise<PhotoAnalysisResult|RoomAnalysisResult>}={}){
+  const allowRequest=options.allowRequest??createRateLimiter();let inFlight=0;
+  return async(request:IncomingMessage&{body?:unknown},response:ServerResponse)=>{
+    const send=(status:number,result:PhotoAnalysisResult|RoomAnalysisResult)=>{
+      if(response.destroyed||response.writableEnded)return;
+      response.statusCode=status;response.setHeader('Content-Type','application/json; charset=utf-8');response.setHeader('Cache-Control','no-store');response.setHeader('X-Content-Type-Options','nosniff');response.end(JSON.stringify(result));
     };
-    if (request.method !== 'POST') {
-      response.setHeader('Allow', 'POST');
-      return send(405, { ok: false, code: 'unsupported', message: 'Use POST to upload a furniture image.' });
+    if(request.method!=='POST'){response.setHeader('Allow','POST');return send(405,{ok:false,code:'unsupported',message:'Use POST to upload a furniture image.'});}
+    const env=options.env??process.env;
+    // Before body reading/decoding/upstream work. Deployed entry points NEVER
+    // pass localDevelopment; keys and old experimental flags cannot bypass this.
+    if(!permitsLocalPaidAI(request,env,options.localDevelopment))return send(503,{ok:false,code:'not_configured',message:PAID_AI_DISABLED_MESSAGE});
+    try{
+      if(request.headers.origin&&new URL(request.headers.origin).host!==request.headers.host)return send(403,{ok:false,code:'unsupported',message:'Use photo search from this application.'});
+    }catch{return send(403,{ok:false,code:'unsupported',message:'Invalid request origin.'});}
+    if(inFlight>=1){response.setHeader('Retry-After','30');return send(429,{ok:false,code:'rate_limited',message:'A local analysis is already running. Use manual search or wait.'});}
+    if(!allowRequest(request.socket.remoteAddress??'unknown')){response.setHeader('Retry-After','60');return send(429,{ok:false,code:'rate_limited',message:'Too many local photo searches. Wait a minute or use manual search.'});}
+    if(request.headers['content-type']?.split(';')[0].trim().toLowerCase()!=='application/json'||request.headers['content-encoding'])return send(415,{ok:false,code:'unsupported',message:'Upload a JPG, PNG, or WebP photo using uncompressed JSON.'});
+    let body:unknown;
+    try{body=await readBody(request);}catch(error){
+      response.setHeader('Connection','close');
+      return send(error instanceof RangeError?413:error instanceof BodyTimeout?408:400,{ok:false,code:'unsupported',message:'Invalid, oversized, or timed-out image upload. Choose a JPG, PNG, or WebP up to 3 MB.'});
     }
-    try {
-      if (request.headers.origin && new URL(request.headers.origin).host !== request.headers.host) return send(403, { ok: false, code: 'unsupported', message: 'Use photo search from this application.' });
-    } catch { return send(403, { ok: false, code: 'unsupported', message: 'Invalid request origin.' }); }
-    const forwarded = process.env.VERCEL ? request.headers['x-vercel-forwarded-for'] : undefined;
-    const address = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(',')[0].trim() || request.socket.remoteAddress || 'unknown';
-    if (!allowRequest(address)) {
-      response.setHeader('Retry-After', '60');
-      return send(429, { ok: false, code: 'rate_limited', message: 'Too many photo searches. Wait a minute or use manual search.' });
-    }
-    if (request.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') return send(415, { ok: false, code: 'unsupported', message: 'Upload a JPG, PNG, or WebP photo using JSON.' });
-    let body: unknown;
-    try { body = await readBody(request); }
-    catch (error) { return send(error instanceof RangeError ? 413 : 400, { ok: false, code: 'unsupported', message: 'Invalid image request. Choose a JPG, PNG, or WebP up to 3 MB.' }); }
-    const dataUrl = body && typeof body === 'object' && 'dataUrl' in body ? body.dataUrl : undefined;
-    if (!validateImage(dataUrl)) return send(400, { ok: false, code: 'unsupported', message: 'Invalid image. Choose a genuine JPG, PNG, or WebP up to 3 MB.' });
-    const env = options.env ?? process.env;
-    if (!env.OPENAI_API_KEY?.trim()) return send(503, { ok: false, code: 'not_configured', message: 'AI photo analysis is not configured. Manual category/style search still works.' });
-    const result = await (options.analyze ?? analyzeFurniturePhoto)(dataUrl, { apiKey: env.OPENAI_API_KEY.trim(), model: env.OPENAI_MODEL, fetchImpl: options.fetchImpl });
-    send(result.ok ? 200 : result.code === 'not_configured' ? 503 : result.code === 'rate_limited' ? 429 : result.code === 'not_furniture' ? 422 : 502, result);
+    const dataUrl=body&&typeof body==='object'&&Object.keys(body).length===1&&'dataUrl' in body?body.dataUrl:undefined;
+    if(!validateImage(dataUrl))return send(400,{ok:false,code:'unsupported',message:'Choose a valid, nonanimated JPG, PNG, or WebP up to 3 MB, 4096 pixels per edge and 12 megapixels.'});
+    if(!env.OPENAI_API_KEY?.trim())return send(503,{ok:false,code:'not_configured',message:'AI photo analysis is not configured. Manual category/style search still works.'});
+    // Recheck after asynchronous body reading to close the simultaneous-upload race.
+    if(inFlight>=1){response.setHeader('Retry-After','30');return send(429,{ok:false,code:'rate_limited',message:'A local analysis is already running. Use manual search or wait.'});}
+    inFlight++;
+    const controller=new AbortController(),abort=()=>controller.abort();
+    request.once('aborted',abort);response.once?.('close',abort);
+    try{
+      if(request.aborted)throw new Error('Aborted');
+      const result=await(options.analyze??analyzeFurniturePhoto)(dataUrl,{apiKey:env.OPENAI_API_KEY.trim(),model:env.OPENAI_MODEL,fetchImpl:options.fetchImpl,signal:controller.signal});
+      send(result.ok?200:result.code==='not_configured'?503:result.code==='rate_limited'?429:result.code==='not_furniture'?422:502,result);
+    }catch{return send(502,{ok:false,code:'api_error',message:'Analysis could not complete. Use manual search.'});}
+    finally{request.off('aborted',abort);response.off?.('close',abort);inFlight--;}
   };
 }

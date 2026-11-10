@@ -1,92 +1,68 @@
 # Furney: developer setup
 
-This guide covers local development, configuration, testing, and deployment. For the project overview, see the [README](../README.md).
+For an overview, see the [README](../README.md). For the current security/cost decision and account controls, see [SECURITY_AUDIT.md](SECURITY_AUDIT.md).
 
-## Requirements
+## Requirements and local development
 
-- Node.js **22.12 or newer** (Node 24 recommended)
-- npm
-- A modern browser with WebGL2 for the interactive 3D scene
-
-The furniture catalog, manual photo matching, pricing, and numeric placement controls work without an OpenAI API key. If WebGL2 is unavailable, the 3D scene may not load, but the rest of the workspace is available.
-
-## Run locally
+Use Node.js 22.12+ (Node 24 recommended), npm, and a WebGL2-capable browser.
 
 ```sh
-git clone https://github.com/ardianagoes/furney.git
-cd furney
+git clone https://github.com/ardianagoes/furney-emergent-hackathon.git
+cd furney-emergent-hackathon
 npm ci
 npm run dev
 ```
 
-Open the address printed by Vite, usually `http://localhost:5173`.
+Open the address printed by Vite. No credentials are required for the 19-product IKEA catalog, manual category/style matching, Add to Room, pricing, camera controls, fit warnings, or room-photo floor calibration. Geometry is illustrative; catalog prices are November 8, 2026 snapshots. Refreshing clears layouts/photos.
 
-Furney is a React + TypeScript single-page app built with Vite. The room planner uses React Three Fiber, Three.js, and Drei. Furniture, placement, and pricing all share one React state provider.
+## Optional, billable LOCAL testing
 
-**Data is session-only:** refreshing the page resets the room, selected furniture, and any uploaded reference photo.
+Paid AI is intentionally unavailable on deployed routes, even if an OpenAI key or the old room-analysis flags exist. Production client code also avoids uploading images for AI. There is no production-enabling environment flag in this revision. Do not expose a Vite development server publicly.
 
-## Optional furniture-photo AI
+To test the existing OpenAI adapter **on your own loopback development machine**:
 
-1. Copy `.env.example` to `.env.local`. The latter is ignored by Git.
-2. Add a server-side OpenAI key:
+1. Copy `.env.example` to ignored `.env.local`.
+2. Set server-only `ENABLE_LOCAL_AI=true`, `OPENAI_API_KEY`, and optionally `OPENAI_MODEL`. The adapter default remains `gpt-4.1-mini`; production previously used its configured `gpt-5.4-mini` override. Do not prefix a key with `VITE_`.
+3. Restart `npm run dev`. Choosing a photo may now incur OpenAI usage charges. Missing keys are reported honestly; no classification is simulated.
+4. Set `ENABLE_LOCAL_AI=false` and restart when finished.
 
-   ```dotenv
-   OPENAI_API_KEY=your_private_key
-   OPENAI_MODEL=gpt-4.1-mini
-   ```
+Only Vite's development middleware passes the internal local capability; the handler also checks the actual loopback socket and refuses Vercel/production processes. Five attempts/minute and one concurrent operation per handler limit local bursts only; these are not distributed production quotas. Vercel functions cannot be unlocked with this local flag.
 
-3. Restart `npm run dev`.
+Local analysis accepts nonanimated JPG/PNG/WebP up to 3 MiB, 4096 pixels per edge and 12 megapixels. The server checks headers/structure, not a full image decode. Upload reading is limited to five seconds; provider calls time out at 20 seconds (furniture) / 25 seconds (room), with bounded output.
 
-The model is configurable; the production deployment has previously used `gpt-5.4-mini`. The Vite dev server serves `/api/photo-search` through local middleware, while Vercel uses `api/photo-search.ts`. Do not use `VITE_OPENAI_API_KEY` or commit your credentials.
+## Room photographs
 
-Photo search uploads are restricted to JPG, PNG, or WebP images of up to 3 MiB. Descriptions and matches are estimates, and results are ranked against the existing product catalog. Manual category/style matching works without the API.
+The separate Room photo control accepts a local reference up to 8 MiB. Align Floor uses four corners and entered measurements; it is not a 3D reconstruction. Local reference photos are not sent to AI unless a separate enabled local analysis is requested.
 
-See [PHOTO_SEARCH.md](PHOTO_SEARCH.md) for request validation, rate limits, privacy, error handling, and opt-in live testing.
+Experimental room analysis requires local AI above, plus `VITE_ENABLE_ROOM_ANALYSIS=true` and server-only `ENABLE_ROOM_ANALYSIS=true` for controlled development. It remains unverified with live AI in this audit and closed on public deployments. See [FLOOR_CALIBRATION.md](FLOOR_CALIBRATION.md) for its shared geometry contract.
 
-## Room photographs and floor calibration
-
-A separate **Room photo** control accepts a JPG, PNG, or WebP image of up to 8 MiB as a local floor reference. In **Align Floor**, identify four floor corners to project the photo onto the measured room floor. Manual calibration requires no AI and does not infer actual measurements from a photograph.
-
-Experimental room-photo analysis is implemented but **disabled by default** while live validation is incomplete. For controlled testing only, enable both flags in the relevant frontend/server environments:
-
-```dotenv
-VITE_ENABLE_ROOM_ANALYSIS=true
-ENABLE_ROOM_ANALYSIS=true
-```
-
-The feature also requires the server-side OpenAI configuration above. Do not describe it as a fully validated production feature. For the geometry and feature gates, see [FLOOR_CALIBRATION.md](FLOOR_CALIBRATION.md) and [FINAL_SUBMISSION.md](FINAL_SUBMISSION.md).
-
-## Test and build
+## Verification
 
 ```sh
-npm test           # Vitest automated tests
-npm run build      # TypeScript check + production build into dist/
-npm run preview    # Preview the static production build
+npm run typecheck
+npm test
+npm run build
+npm run check:public
+npm run audit:secrets
+npm audit
+npm run preview
 ```
 
-`npm run preview` does not provide Vite's development API middleware, so live photo analysis requires a deployed API or the development server.
+Regular tests mock OpenAI and incur no provider charges. The build/public checks reject server adapter identifiers, secret canaries and suspicious credential patterns in browser artifacts. The heuristic secret scanner includes locally available deleted/history blobs; it cannot prove all secrets absent.
 
-When the AI endpoint is properly configured, you can opt into a real provider smoke test:
+`npm run preview` serves the static SPA without analysis APIs. The optional `npm run test:vision` can send two billable requests; it refuses to run without `CONFIRM_BILLABLE_AI_TEST=yes`. It is never part of CI or this audit. Do not run it against someone else's server.
 
-```sh
-npm run test:vision
-```
+## Deployment and future public AI
 
-This makes actual OpenAI requests and can incur charges. Regular automated tests mock provider transport. See the [final submission verification](FINAL_SUBMISSION.md) for the recorded test scope and limitations.
+Use the existing repository, Vite preset, `npm run build`, and output `dist`. This PR does not deploy or modify production settings. Its branch preview deployment is disabled in vercel.json. The API functions return safe disabled responses without reading uploads or contacting OpenAI. Manual features need no Vercel/OpenAI environment variables.
 
-## Deploy to Vercel
+Before public paid AI can be restored, implement and test an atomic shared quota/attempt budget and concurrent-operation leases across both routes/instances, with fail-closed behavior when state is unavailable. Origin checks, hidden buttons and in-memory counters do not provide this. Account/edge safeguards and legacy deployments also need owner review; see the [security audit](SECURITY_AUDIT.md).
 
-Use the existing repository with the **Vite** framework preset, `npm run build` as the build command, and `dist` as the output directory. The `api/` directory contains the Vercel serverless endpoints. Configure `OPENAI_API_KEY` and optionally `OPENAI_MODEL` as **server-side** Vercel environment variables, then redeploy. Leave the experimental room-analysis flags unset until separately validated.
+## Code and extended references
 
-The product catalog is a November 8, 2026 snapshot of 19 IKEA US listings with local copies of official product imagery. There is no runtime retailer price or inventory feed. See [the source record](ikea-catalog-sources.json) for verification and [FINAL_SUBMISSION.md](FINAL_SUBMISSION.md) for product scope.
-
-## Architecture reference
-
-- `src/components/room/`: 3D renderer, furniture geometry, floor and camera
-- `src/components/PhotoSearch.tsx` and `src/lib/photo-match.ts`: furniture-photo and manual matching
-- `src/data/furnitureProducts.ts`: catalog product records
-- `src/state/`: shared room, placement, catalog, and price state
-- `src/lib/plannerAdapter.ts` and `src/lib/floorCalibration.ts`: scene and floor coordinate conversion
-- `api/` and `server/`: server-side photo endpoints and validation
-
-Historical integration and test results are recorded in [LATEST_INTEGRATION.md](LATEST_INTEGRATION.md). The UI requires no accounts, payment information, or database.
+- `src/state/`: shared room, placement, catalog and pricing state
+- `src/components/room/`: renderer, furniture, floor and camera
+- `src/lib/photo-match.ts`: Shreya's category-first matching rules
+- `server/`, `api/`: policy, validation and optional server-only OpenAI adapters
+- [Catalog source record](ikea-catalog-sources.json), [photo search](PHOTO_SEARCH.md), [calibration](FLOOR_CALIBRATION.md), and [license status](LICENSE_STATUS.md)
+- [Final submission](FINAL_SUBMISSION.md) and [teammate integration](LATEST_INTEGRATION.md) are historical implementation/verification notes; this audit supersedes their deployment-enabling instructions.

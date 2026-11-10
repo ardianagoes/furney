@@ -8,3 +8,13 @@ coverage/
 .env.*
 !.env.example
 .vercel/
+*.log
+*.tmp.json
+*.tmp.log
+*.pem
+*.key
+.npmrc
+.yarnrc.yml
+.idea/
+.vscode/
+Thumbs.db

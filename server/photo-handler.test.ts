@@ -2,7 +2,7 @@ import { Readable } from 'node:stream';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createPhotoHandler, createRateLimiter, validateImage } from './photo-handler';
+import { createPhotoHandler as createHandler, createRateLimiter, validateImage } from './photo-handler';
 import { analyzeFurniturePhoto } from './photo-analysis.server';
 import { MAX_IMAGE_BYTES } from '../src/lib/photo-search-types';
 
@@ -10,6 +10,8 @@ const chair = `data:image/jpeg;base64,${readFileSync(new URL('../src/assets/ikea
 const sofa = `data:image/jpeg;base64,${readFileSync(new URL('../src/assets/ikea/80519531.jpg', import.meta.url)).toString('base64')}`;
 const analysis = { isFurniture: true, category: 'Chairs', primaryColor: 'brown', material: 'wood', style: 'scandinavian', keywords: ['dining', 'wood'] };
 const providerResponse = (value: unknown) => new Response(JSON.stringify({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify(value) }] }] }), { status: 200 });
+// Explicit LOCAL opt-in, mocked transport; public-route tests use real entry points.
+const createPhotoHandler=(options:Parameters<typeof createHandler>[0]={})=>createHandler({...options,localDevelopment:true,env:{...options.env,ENABLE_LOCAL_AI:'true'}});
 
 async function invoke(handler: ReturnType<typeof createPhotoHandler>, options: { method?: string; body?: unknown; raw?: string; headers?: Record<string, string> } = {}) {
   const request = Readable.from([options.raw ?? JSON.stringify(options.body ?? { dataUrl: chair })]) as IncomingMessage & { body?: unknown };
@@ -29,19 +31,18 @@ describe('server image validation and rate limiting', () => {
     expect(validateImage(sofa)).toBe(true);
     for (const invalid of [chair.replace('image/jpeg', 'image/png'), 'https://example.com/photo.jpg', 'data:image/jpeg;base64,garbage!', 'data:image/jpeg;base64,', 'data:image/svg+xml;base64,PHN2Zz4=', `data:image/jpeg;base64,${Buffer.alloc(MAX_IMAGE_BYTES + 1).toString('base64')}`]) expect(validateImage(invalid)).toBe(false);
   });
-  it('allows five requests per caller/minute, applies a per-instance total, then expires buckets', () => {
+  it('limits loopback development to five requests/minute across callers, then expires', () => {
     let time = 1;
     const allow = createRateLimiter(() => time);
     for (let i = 0; i < 5; i++) expect(allow('one-client')).toBe(true);
     expect(allow('one-client')).toBe(false);
-    for (let i = 0; i < 15; i++) expect(allow(`client-${i}`)).toBe(true);
     expect(allow('another-client')).toBe(false);
     time += 60_000;
     expect(allow('one-client')).toBe(true);
   });
   it('requires POST, JSON, same-origin browser requests, and valid image data', async () => {
     const fetchImpl = vi.fn();
-    const handler = createPhotoHandler({ env: {}, fetchImpl });
+    const handler = createPhotoHandler({ env: {}, fetchImpl,allowRequest:()=>true });
     expect((await invoke(handler, { method: 'GET' })).status).toBe(405);
     expect((await invoke(handler, { headers: { 'content-type': 'text/plain' } })).status).toBe(415);
     expect((await invoke(handler, { headers: { origin: 'https://another.example' } })).status).toBe(403);
