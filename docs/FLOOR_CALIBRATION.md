@@ -1,5 +1,7 @@
 # Perspective floor calibration
 
+Security update (November 10, 2026): public paid-AI routes are now closed regardless of experiment flags. Manual calibration is unchanged. See [current setup](SETUP.md) for optional local testing and [the audit](SECURITY_AUDIT.md) for public-launch requirements; these supersede older deployment-enabling notes below.
+
 Based on Furney main `3437e7c` (PR #9). Reviewed Angelo's normalized floor-corner and furniture-contact implementation at `64866ec5ea4b38890ecabc56e2c9cc8027f5a0ee`; no TanStack/Lovable infrastructure is imported.
 
 ## Using Align Floor

@@ -20,8 +20,8 @@ it('uploads real image bytes through validation and mocked OpenAI, then matches,
       isFurniture: true, category: 'Sofas', primaryColor: 'black', material: 'leather', style: 'modern', keywords: ['three-seat', 'cushions'],
     }) }] }],
   })));
-  const handler = createPhotoHandler({ env: { OPENAI_API_KEY: 'test-only-key', OPENAI_MODEL: 'gpt-5.4-mini' }, fetchImpl: provider });
-  // Only the upstream OpenAI transport is mocked; use the actual endpoint,
+  const handler = createPhotoHandler({ localDevelopment:true,env: { ENABLE_LOCAL_AI:'true',OPENAI_API_KEY: 'test-only-key', OPENAI_MODEL: 'gpt-5.4-mini' }, fetchImpl: provider });
+  // Explicit local opt-in; only the upstream OpenAI transport is mocked. Use the handler,
   // parser, file validation, ranking, callbacks, host adapter and reducer.
   vi.stubGlobal('fetch', vi.fn(async (url: string, options: RequestInit) => {
     expect(url).toBe('/api/photo-search');

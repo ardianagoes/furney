@@ -2,6 +2,9 @@
 import { parsePhotoAnalysis, type PhotoAnalysisResult } from './photo-search-types';
 
 export async function analyzePhoto(dataUrl: string, signal?: AbortSignal): Promise<PhotoAnalysisResult> {
+  // Reduce unnecessary uploads on the public static site. The server enforces
+  // its own prohibition; this UI guard is not a security boundary.
+  if(!import.meta.env.DEV)return {ok:false,code:'not_configured',message:'Paid AI analysis is disabled on the public demo. Use manual category/style search below.'};
   try {
     const response = await fetch('/api/photo-search', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },

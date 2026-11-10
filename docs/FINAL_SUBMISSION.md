@@ -1,5 +1,7 @@
 # Final submission update
 
+Historical submission notes. The [November 10 security audit](SECURITY_AUDIT.md) and [current setup](SETUP.md) supersede the AI deployment instructions here: paid public endpoints are now closed, while manual planning and matching remain functional.
+
 Based on main at 70d7366 (PRs #1–#5 already integrated). Work is on codex/final-ikea-room-analysis; no automatic merge or deployment.
 
 ## IKEA catalog: ready

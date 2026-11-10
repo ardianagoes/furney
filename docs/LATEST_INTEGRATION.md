@@ -1,5 +1,7 @@
 # Latest teammate integration
 
+Historical integration notes. See the [November 10 security audit](SECURITY_AUDIT.md) and [current setup](SETUP.md) for the current paid-AI policy: public endpoints are closed, and historical live-AI results do not establish current availability or abuse protection.
+
 Baseline: Furney main `c6c0ab4f2b9b10999281f0093f61cdc91136a3da`, including Shreya's matching changes merged in PR #5. PR #4 merges this baseline without rewriting history.
 
 ## Shreya

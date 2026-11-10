@@ -89,7 +89,7 @@ export function PhotoSearch({ products, onAddProduct, attributes = furnitureAttr
 
   return <section className="photo-search-panel" aria-label="Photo search">
     <div className="photo-search-heading"><h4>Find a similar piece.</h4>{onClose && <button type="button" aria-label="Close photo search" onClick={onClose}><X size={16} /></button>}</div>
-    <p className="photo-search-intro">Upload a furniture photo, or search manually. When AI is configured, your photo is sent to OpenAI for analysis. Matches come only from this catalog.</p>
+    <p className="photo-search-intro">{import.meta.env.DEV?'Upload a furniture photo, or search manually. Explicitly enabled local AI sends your photo to OpenAI for analysis.':'Paid AI is disabled on the public demo. Manual category/style search is available below.'} Matches come only from this catalog.</p>
     <input ref={inputRef} className="sr-only" type="file" aria-label="Upload furniture photo" accept={ACCEPTED_IMAGE_TYPES.join(',')} onChange={event => {
       void handleFile(event.target.files?.[0]); event.target.value = '';
     }} />

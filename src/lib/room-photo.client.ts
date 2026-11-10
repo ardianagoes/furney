@@ -12,6 +12,7 @@ export async function prepareRoomPhoto(photo: string): Promise<string> {
   return dataUrl;
 }
 export async function analyzeRoom(photo: string, signal: AbortSignal): Promise<RoomAnalysisResult> {
+  if(!import.meta.env.DEV)return {ok:false,code:'not_configured',message:'Paid room analysis is disabled on the public demo. Your photo and manual floor alignment still work.'};
   const dataUrl=await prepareRoomPhoto(photo);
   if(signal.aborted)throw new Error('Cancelled');
   const response=await fetch('/api/room-photo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dataUrl}),signal});

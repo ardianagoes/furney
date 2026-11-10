@@ -1,6 +1,7 @@
 {
   "name": "furney",
   "private": true,
+  "license": "UNLICENSED",
   "version": "0.1.0",
   "type": "module",
   "engines": {
@@ -11,7 +12,10 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:vision": "node scripts/verify-photo-search.mjs"
+    "test:vision": "node scripts/verify-photo-search.mjs",
+    "typecheck": "tsc -b --pretty false",
+    "check:public": "node scripts/check-public-artifacts.mjs && node scripts/audit-secrets.mjs --dist",
+    "audit:secrets": "node scripts/audit-secrets.mjs --history"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

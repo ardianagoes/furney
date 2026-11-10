@@ -2,6 +2,11 @@
 // Run only against your own configured Furney dev server or Vercel deployment.
 import { readFile } from 'node:fs/promises';
 
+if(process.env.CONFIRM_BILLABLE_AI_TEST!=='yes'){
+  console.error('Not run: this opt-in test can incur OpenAI charges. Set CONFIRM_BILLABLE_AI_TEST=yes only for your own explicitly enabled local server.');
+  process.exit(1);
+}
+
 const baseUrl = process.env.PHOTO_SEARCH_BASE_URL || 'http://127.0.0.1:5173';
 const endpoint = new URL('/api/photo-search', baseUrl);
 let failures = 0;

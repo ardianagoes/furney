@@ -18,7 +18,7 @@ it('keeps the new production endpoint disabled until explicitly enabled',async()
 });
 it('passes a real furnished-room image through validation and server-only configured OpenAI (mocked)',async()=>{
   const provider=vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(detection)}]}]})));
-  const handler=createPhotoHandler({env:{OPENAI_API_KEY:'test-only',OPENAI_MODEL:'configured-model'},fetchImpl:provider,analyze:analyzeRoomPhoto});
+  const handler=createPhotoHandler({localDevelopment:true,env:{ENABLE_LOCAL_AI:'true',OPENAI_API_KEY:'test-only',OPENAI_MODEL:'configured-model'},fetchImpl:provider,analyze:analyzeRoomPhoto});
   const req=Readable.from([JSON.stringify({dataUrl:image})]) as IncomingMessage;
   Object.assign(req,{method:'POST',headers:{host:'localhost','content-type':'application/json'},socket:{remoteAddress:'127.0.0.1'}});
   let output='';const res={statusCode:200,setHeader:()=>{},end:(s:string)=>{output=s;}} as unknown as ServerResponse;
